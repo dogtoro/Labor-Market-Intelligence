@@ -69,32 +69,32 @@ Quy trình dữ liệu được thiết kế theo mô hình **4 tầng dữ li�
 ```mermaid
 flowchart TD
     subgraph L1["Tầng 1: Raw Ingestion"]
-        Sitemap["TopCV Sitemap / List Pages"] -->|Crawler rate-limit >=3s| RawHTML["HTML Snapshots (data/raw/)"]
-        RawHTML -->|Hash integrity| Manifest["docs/MANIFEST.json (SHA-256)"]
+        Sitemap["TopCV Sitemap / List Pages"] -->|"Crawler rate-limit >= 3s"| RawHTML["HTML Snapshots (data/raw/)"]
+        RawHTML -->|"Hash integrity"| Manifest["docs/MANIFEST.json (SHA-256)"]
     end
 
     subgraph L2["Tầng 2: Parsing & Validation"]
-        RawHTML -->|HTML Parser (selectolax/bs4)| ParsedDF["jobs_parsed.parquet (data/interim/)"]
-        ParsedDF -->|Contract Check: validate_parsed()| V1{"Hợp lệ schema?"}
-        V1 -- Không --> Alert1["Raise ValidationError"]
+        RawHTML -->|"HTML Parser (selectolax/bs4)"| ParsedDF["jobs_parsed.parquet (data/interim/)"]
+        ParsedDF -->|"Contract Check: validate_parsed()"| V1{"Hợp lệ schema?"}
+        V1 -->|"Không"| Alert1["Raise ValidationError"]
     end
 
     subgraph L3["Tầng 3: Data Cleaning & Normalization"]
-        V1 -- Có --> Dedup["Deduplication Engine\n(Company + Title Sim >=0.85 + Date <=7d)"]
-        Dedup --> SalaryParser["Salary Normalization\n(VND/USD -> trieu, Min/Max/Bins)"]
+        V1 -->|"Có"| Dedup["Deduplication Engine<br/>(Company + Title Sim >= 0.85 + Date <= 7d)"]
+        Dedup --> SalaryParser["Salary Normalization<br/>(VND/USD -> trieu, Min/Max/Bins)"]
         SalaryParser --> CleanDF["jobs_clean.parquet (data/interim/)"]
-        CleanDF -->|Contract Check: validate_clean()| V2{"Hợp lệ clean?"}
-        V2 -- Không --> Alert2["Raise ValidationError"]
+        CleanDF -->|"Contract Check: validate_clean()"| V2{"Hợp lệ clean?"}
+        V2 -->|"Không"| Alert2["Raise ValidationError"]
     end
 
     subgraph L4["Tầng 4: Feature Engineering & Modeling"]
-        V2 -- Có --> SkillExtractor["Dictionary-based Skill Extractor\n(100+ Skills, Regex Word-Boundary)"]
-        SkillExtractor --> SkillMatrix["skill_matrix.parquet (data/processed/)\n(Ma trận nhị phân Jobs x Skills)"]
-        SkillMatrix -->|Contract Check: validate_skills()| V3{"Hợp lệ matrix?"}
+        V2 -->|"Có"| SkillExtractor["Dictionary-based Skill Extractor<br/>(100+ Skills, Regex Word-Boundary)"]
+        SkillExtractor --> SkillMatrix["skill_matrix.parquet (data/processed/)<br/>(Ma trận nhị phân Jobs x Skills)"]
+        SkillMatrix -->|"Contract Check: validate_skills()"| V3{"Hợp lệ matrix?"}
         
-        V3 -- Có --> M1["Mô hình 1: Apriori Rules\n(Temporal Train/Test Split)"]
-        V3 -- Có --> M2["Mô hình 2: Hierarchical Clustering\n(Jaccard Distance + Purity Metric)"]
-        CleanDF -.->|Chỉ tin có lương| M3["Mô hình 3: Decision Tree\n(Salary Classification + Feature Imp.)"]
+        V3 -->|"Có"| M1["Mô hình 1: Apriori Rules<br/>(Temporal Train/Test Split)"]
+        V3 -->|"Có"| M2["Mô hình 2: Hierarchical Clustering<br/>(Jaccard Distance + Purity Metric)"]
+        CleanDF -.->|"Chỉ tin có lương"| M3["Mô hình 3: Decision Tree<br/>(Salary Classification + Feature Imp.)"]
     end
 ```
 
@@ -108,7 +108,7 @@ flowchart TD
 
 #### Khử trùng lặp đa tiêu chí (Deduplication)
 Một nhà tuyển dụng thường đăng lại cùng một vị trí tuyển dụng nhiều lần trong vòng vài ngày hoặc đăng biến thể của cùng một tiêu đề. Khử trùng lặp hoàn toàn bằng ID sẽ bỏ sót các bản ghi này. Thuật toán khử trùng lặp sử dụng bộ ba tiêu chuẩn:
-$$\text{IsDuplicate}(J_1, J_2) \iff \begin{cases} \text{company}_1 = \text{company}_2 \\ \text{SequenceMatcher}(\text{title}_1, \text{title}_2) \ge 0.85 \\ |\text{posted\_date}_1 - \text{posted\_date}_2| \le 7 \text{ ngày} \end{cases}$$
+$$\text{IsDuplicate}(J_1, J_2) \iff \begin{cases} \text{company}_1 = \text{company}_2 \\ \text{SequenceMatcher}(\text{title}_1, \text{title}_2) \ge 0.85 \\ |\text{date}_1 - \text{date}_2| \le 7 \text{ ngày} \end{cases}$$
 Trong đó hàm tương đồng `difflib.SequenceMatcher` tính tỷ lệ Gestalt Pattern Matching giữa 2 tiêu đề (được chuẩn hóa lowercase và strip whitespace). Bản ghi mới hơn sẽ được giữ lại, bản trùng bị loại bỏ.
 
 #### Chuẩn hóa & Rời rạc hóa dải lương (Salary Normalization & Discretization)
@@ -119,15 +119,17 @@ Chuỗi lương gốc trên tin tuyển dụng Việt Nam rất đa dạng: *"15
   - `full_range`: Có cả cận dưới `salary_min` và cận trên `salary_max`.
   - `one_sided`: Chỉ có cận trên (*"Lên đến 30 triệu"*) hoặc chỉ có cận dưới (*"Từ 20 triệu"*).
   - `undisclosed`: Lương không công khai (*"Thoả thuận"*, *"Cạnh tranh"*, chuỗi rỗng hoặc `None`).
-- **Lương đại diện (`salary_mid`):** Đối với các tin có đủ dải, tính trung bình $\frac{\text{salary\_min} + \text{salary\_max}}{2}$.
+- **Lương đại diện (`salary_mid`):** Đối với các tin có đủ dải, tính trung bình:
+  $$\text{salary}_{\text{mid}} = \frac{\text{salary}_{\min} + \text{salary}_{\max}}{2}$$
 - **Rời rạc hóa (Binning):** Phân chia thành 3 phân lớp phục vụ bài toán phân lớp:
-  $$\text{SalaryGroup} = \begin{cases} \text{Low (< 15 triệu)} & \text{khi } \text{salary\_mid} < 15 \\ \text{Mid (15 – 30 triệu)} & \text{khi } 15 \le \text{salary\_mid} \le 30 \\ \text{High (> 30 triệu)} & \text{khi } \text{salary\_mid} > 30 \end{cases}$$
+  $$\text{SalaryGroup} = \begin{cases} \text{Low (< 15 triệu)} & \text{khi } \text{salary}_{\text{mid}} < 15 \\ \text{Mid (15 – 30 triệu)} & \text{khi } 15 \le \text{salary}_{\text{mid}} \le 30 \\ \text{High (> 30 triệu)} & \text{khi } \text{salary}_{\text{mid}} > 30 \end{cases}$$
 
 #### Trích xuất kỹ năng bằng từ điển Regex (Skill Extraction)
 - Xây dựng từ điển `src/skills/skill_dict.json` gồm hơn 100 kỹ năng cốt lõi ngành IT/Data, phân cấp theo taxonomy: Programming Languages, Databases, Cloud & DevOps, Frameworks, Big Data & Analytics, AI/ML, Version Control.
 - Mỗi kỹ năng đi kèm danh sách alias (tên viết tắt, tên thay thế).
 - Khớp kỹ năng bằng Regex với ranh giới từ `\b` để tránh nhận diện sai (ví dụ: tránh nhận nhầm chữ "c" trong "company" là ngôn ngữ "C", hoặc "go" trong "good" là ngôn ngữ "Go"):
-  $$\text{Pattern}(k) = \text{RegEx}\Big(\text{r}\text{"\b("} + \bigvee_{a \in \text{Aliases}(k)} \text{Escape}(a) + \text{r")\b"},\ \text{flags}=\text{IGNORECASE}\Big)$$
+  $$\text{Pattern}(k) = \text{Regex}\Big(\text{boundary} + \bigvee_{a \in \text{Aliases}(k)} \text{Escape}(a) + \text{boundary},\ \text{flags}=\text{IGNORECASE}\Big)$$
+  Cú pháp Python tương đương: `rf"\b({'|'.join(re.escape(a) for a in aliases)})\b"`
 - Kết quả tạo thành ma trận nhị phân $\mathbf{X} \in \{0, 1\}^{N \times M}$ với $N$ tin tuyển dụng và $M$ kỹ năng (lọc các kỹ năng xuất hiện $\ge 5$ lần).
 
 ---
