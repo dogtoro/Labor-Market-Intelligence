@@ -1,0 +1,11 @@
+# Labor Market Intelligence — Python 3.11+
+httpx>=0.27
+beautifulsoup4>=4.12
+selectolax>=0.3.21
+pandas>=2.1
+pyarrow>=14
+mlxtend>=0.23
+scikit-learn>=1.4
+scipy>=1.12
+matplotlib>=3.8
+pytest>=8.0

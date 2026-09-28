@@ -1,0 +1,49 @@
+# ── Dữ liệu (chỉ commit manifest & .gitkeep, KHÔNG commit dữ liệu thô/processed) ──
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# ── AI Agents / IDE ──
+.claude/
+.gemini/
+
+# ── Bảo mật ──
+.env
+*.pem
+*.key
+secrets/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Hệ điều hành ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Jupyter ──
+.ipynb_checkpoints/
+
+# ── Pytest ──
+.pytest_cache/
+htmlcov/
+.coverage
