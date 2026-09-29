@@ -98,6 +98,29 @@ flowchart TD
     end
 ```
 
+#### Chi tiết vận hành luồng dữ liệu qua 4 tầng:
+
+1. **Tầng 1: Thu thập dữ liệu thô (Raw Ingestion Layer)**
+   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap và danh mục việc làm ngành IT / Dữ liệu trên nền tảng TopCV.
+   - **Kiểm soát tốc độ (Crawler Rate-limit $\ge 3$s):** Cơ chế tạm dừng (delay) tối thiểu 3 giây giữa mỗi request HTTP liên tiếp. Đây là quy tắc thu thập dữ liệu có trách nhiệm (Polite Web Scraping) nhằm tôn trọng tài nguyên máy chủ, tuân thủ `robots.txt` và tránh kích hoạt cơ chế chặn tự động (Cloudflare / WAF 429 Too Many Requests).
+   - **Bảo chứng tính toàn vẹn (Reproducibility):** Toàn bộ file HTML thô được lưu trữ nguyên bản tại `data/raw/{job_id}.html`. Sau khi thu thập xong, mã băm SHA-256 của từng file được đóng băng trong `docs/MANIFEST.json` để đảm bảo dữ liệu nghiên cứu có thể kiểm chứng độc lập.
+
+2. **Tầng 2: Phân tích cú pháp & Kiểm định cấu trúc (Parsing & Schema Validation Layer)**
+   - **Bóc tách dữ liệu:** Bộ trích xuất HTML kết hợp `selectolax` (tốc độ cao) và `BeautifulSoup4` phân giải HTML thô thành bảng dữ liệu gồm 10 trường thông tin chuẩn: `job_id`, `title`, `company`, `location`, `salary_raw`, `experience_raw`, `job_description`, `posted_date`, `url`. Kết quả lưu dưới dạng `data/interim/jobs_parsed.parquet`.
+   - **Chốt chặn hợp đồng 1 (`validate_parsed`):** Áp dụng nguyên lý *Fail-fast* (thất bại sớm) ngay tại cửa ngõ dữ liệu. Hàm kiểm định bắt buộc dữ liệu không rỗng, đủ 10 cột chuẩn, `job_id` là khóa chính duy nhất và không bị khuyết thiếu `title`, `company`. Nếu vi phạm, pipeline sẽ lập tức ngắt và báo lỗi (`Raise ValidationError`).
+
+3. **Tầng 3: Làm sạch & Chuẩn hóa nghiệp vụ (Data Cleaning & Normalization Layer)**
+   - **Khử trùng lặp đa tiêu chí (Deduplication Engine):** Tin tuyển dụng thực tế thường xuyên được các doanh nghiệp đăng lại nhiều lần trong tuần. Bộ lọc đối sánh bộ ba tiêu chuẩn: cùng công ty, độ tương đồng chuỗi tiêu đề $\ge 0.85$ (Gestalt Pattern Matching qua `difflib.SequenceMatcher`) và khoảng cách ngày đăng $\le 7$ ngày; tự động giữ lại bản ghi mới hơn và loại bỏ bản trùng lặp.
+   - **Chuẩn hóa thu nhập (Salary Normalization):** Nhận diện cấu trúc lương chuỗi tiếng Việt/tiếng Anh, quy đổi ngoại tệ (USD sang VNĐ triệu), phân loại vào 3 trạng thái (`full_range`, `one_sided`, `undisclosed`) và tính lương trung vị đại diện `salary_mid = (min + max) / 2`.
+   - **Chốt chặn hợp đồng 2 (`validate_clean`):** Kiểm tra tính hợp lệ nghiệp vụ trên `data/interim/jobs_clean.parquet` (tin có đủ dải lương bắt buộc thỏa mãn $0 < \text{salary}_{\min} \le \text{salary}_{\max}$; các tin giấu lương bắt buộc các cột số liệu là null).
+
+4. **Tầng 4: Trích xuất đặc trưng & Khai phá mô hình (Feature Engineering & Modeling Layer)**
+   - **Trích xuất ma trận kỹ năng (Skill Extraction):** Quét toàn bộ phần mô tả công việc (JD) qua từ điển chuẩn hóa $> 100$ kỹ năng IT/Data kết hợp ranh giới từ Regex `\b` (tránh nhầm lẫn các từ ngắn như "C", "R", "Go"). Tạo ra ma trận nhị phân $Jobs \times Skills$ tại `data/processed/skill_matrix.parquet`.
+   - **Chốt chặn hợp đồng 3 (`validate_skills`):** Bảo đảm ma trận kỹ năng chỉ chứa giá trị nhị phân $\{0, 1\}$ và không bị lỗi kiểu dữ liệu.
+   - **Phân luồng dữ liệu cho 3 bài toán nghiên cứu:**
+     - **Mô hình 1 (Apriori - Luật kết hợp) & Mô hình 2 (Clustering - Phân cụm công việc):** Sử dụng **100% dữ liệu** từ ma trận kỹ năng. Do hai mô hình này phân tích tổ hợp kỹ năng và cấu trúc phân nhóm nghề nghiệp tự nhiên, mọi tin tuyển dụng (kể cả có lương hay giấu lương) đều có giá trị đóng góp thông tin.
+     - **Mô hình 3 (Decision Tree - Phân lớp mức lương):** Đi theo đường nét đứt **"Chỉ tin có lương"** từ `jobs_clean.parquet`. Vì đây là mô hình học có giám sát (Supervised Learning) với nhãn mục tiêu là phân lớp thu nhập (`Low`, `Mid`, `High`), dữ liệu huấn luyện bắt buộc phải có thông tin mức lương rõ ràng (chiếm ~20% – 40% tổng dữ liệu). Phần lớn tin tuyển dụng ghi lương "Thoả thuận" (60% – 80%) được tách riêng để phục vụ bài toán **Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)** ở Mục 2.6 nhằm đánh giá mức độ đại diện của mô hình.
+
 ---
 
 ### 2.2 Tiền xử lý & Chuẩn hóa dữ liệu (Data Preprocessing)
