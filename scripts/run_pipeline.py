@@ -43,17 +43,25 @@ def run_step(step: str):
         subprocess.run([sys.executable, "scripts/make_manifest.py"], cwd=PROJECT_ROOT, check=True)
         return
 
+    # --- CRAWLER INTEGRATION ---
+    if step == "pilot":
+        subprocess.run([sys.executable, "src/crawl/crawler.py", "pilot"], cwd=PROJECT_ROOT, check=True)
+        return
+        
+    if step == "crawl":
+        subprocess.run([sys.executable, "src/crawl/crawler.py", "full"], cwd=PROJECT_ROOT, check=True)
+        return
+    # ---------------------------------
+
     if step == "all":
         for s in ["parse", "clean", "skills", "rules", "cluster", "figures", "manifest"]:
             run_step(s)
         return
 
-    # Each step will have its own script in src/<module>/
-    # For now, print a placeholder
+    # Placeholder for the other team members' steps
     print(f"⚠ Step '{step}' chưa được implement.")
     print(f"  → Người phụ trách cần viết logic trong src/ tương ứng.")
     print(f"  → Xem docs/tasks/ để biết đầu vào/đầu ra mong đợi.")
-
 
 def main():
     if len(sys.argv) < 2:
