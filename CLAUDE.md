@@ -8,7 +8,8 @@
 ## 1. Mô tả dự án (5 dòng)
 
 Dự án môn Fundamentals of Data Science (USTH). Nhóm 5 người, 7 ngày (29/09 → 06/10/2026).
-Crawl tin tuyển dụng IT/Data **công khai** trên TopCV (1 đợt duy nhất) → parse HTML → làm sạch
+Crawl tin tuyển dụng IT/Data **công khai** trên ITviec (1 đợt duy nhất; đổi từ TopCV tối 29/09
+vì bị Cloudflare JS Challenge chặn toàn domain — xem `docs/tos_review.md`) → parse HTML → làm sạch
 + chuẩn hóa lương → trích kỹ năng bằng từ điển → chạy **Association Rules (Apriori)** và
 **Hierarchical Clustering (Jaccard)** → tuỳ chọn **Decision Tree phân lớp dải lương** →
 EDA, hình vẽ, slide trình bày.
@@ -26,7 +27,7 @@ Sitemap → [crawl] → data/raw/*.html
 
 ## 3. QUY TẮC CRAWL — BẮT BUỘC, KHÔNG NGOẠI LỆ
 
-- **Chỉ trang công khai.** KHÔNG đăng nhập, KHÔNG gọi API nội bộ của TopCV.
+- **Chỉ trang công khai.** KHÔNG đăng nhập, KHÔNG gọi API nội bộ của site nguồn (ITviec).
 - **User-Agent trung thực:** `USTH-FDS-Project/2026 (contact: <email nhóm>)`.
   KHÔNG giả User-Agent trình duyệt (Chrome, Firefox, v.v.).
 - **Delay ≥ 3 giây** giữa mỗi request. KHÔNG giảm, KHÔNG tắt.

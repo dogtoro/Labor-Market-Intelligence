@@ -4,6 +4,8 @@
 > **Môn học:** Fundamentals of Data Science (USTH)  
 > **Repository:** [https://github.com/dogtoro/Labor-Market-Intelligence](https://github.com/dogtoro/Labor-Market-Intelligence)
 
+> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server, nhưng chỉ có **673 tin IT đang active** (thấp hơn mốc ≥1.000 ban đầu). Bằng chứng đầy đủ và điều kiện còn treo (đọc ToS, chốt ngưỡng khối lượng) tại [`docs/tos_review.md`](docs/tos_review.md) và [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) (A10–A13).
+
 ---
 
 ## 📑 Mục Lục
@@ -40,7 +42,7 @@ Tuy nhiên, sinh viên mới ra trường và người tìm việc thường đ�
 - **Minh bạch thu nhập:** Phần lớn tin tuyển dụng ghi lương "Thoả thuận" hoặc "Cạnh tranh", gây nhiễu và thiên lệch khi người học muốn định giá kỹ năng của mình trên thị trường.
 
 ### 1.2 Mục tiêu nghiên cứu
-Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá dữ liệu tuyển dụng IT/Dữ liệu quy mô thực tế từ nền tảng tuyển dụng TopCV nhằm mục đích:
+Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá dữ liệu tuyển dụng IT/Dữ liệu quy mô thực tế từ nền tảng tuyển dụng **ITviec** (đổi từ TopCV do bị chặn bởi Cloudflare — xem [`docs/tos_review.md`](docs/tos_review.md)) nhằm mục đích:
 1. Phát hiện các **quy luật kết hợp kỹ năng (Skill Association Rules)** được săn đón nhiều nhất.
 2. Tự động **phân nhóm các vị trí tuyển dụng (Job Clustering)** theo không gian kỹ năng thực tế thay vì dựa vào nhãn cảm tính.
 3. Đánh giá tác động của **kỹ năng, cấp bậc kinh nghiệm và địa điểm** tới khả năng đạt **dải lương cao** (thông qua mô hình học máy có khả năng giải thích).
@@ -54,7 +56,7 @@ Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá d�
 | **Q3** | Các kỹ năng nào đóng vai trò **tiên quyết để phân định dải thu nhập** (thấp vs trung bình vs cao)? Có tồn tại thiên lệch hệ thống giữa tin công khai lương và tin giấu lương không? | **Decision Tree Classification (CART), Feature Importance & Missing Data Bias Analysis** |
 
 ### 1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận
-- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng TopCV.
+- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, ~673 tin đang active tính đến 29/09 — xem `docs/tos_review.md`).
 - **Phương thức:** Thu thập 1 đợt (snapshot), có rate-limit chặt chẽ ($\ge 3$s/request), tuân thủ ToS và `robots.txt`.
 - **Tính toán tái lặp (Reproducibility):** Toàn bộ dữ liệu thô và trung gian được bảo chứng tính toàn vẹn bằng mã băm SHA-256 (`docs/MANIFEST.json`).
 
@@ -69,7 +71,7 @@ Quy trình dữ liệu được thiết kế theo mô hình **4 tầng dữ li�
 ```mermaid
 flowchart TD
     subgraph L1["Tầng 1: Raw Ingestion"]
-        Sitemap["TopCV Sitemap / List Pages"] -->|"Crawler rate-limit >= 3s"| RawHTML["HTML Snapshots (data/raw/)"]
+        Sitemap["ITviec Sitemap / List Pages"] -->|"Crawler rate-limit >= 3s"| RawHTML["HTML Snapshots (data/raw/)"]
         RawHTML -->|"Hash integrity"| Manifest["docs/MANIFEST.json (SHA-256)"]
     end
 
@@ -101,7 +103,7 @@ flowchart TD
 #### Chi tiết vận hành luồng dữ liệu qua 4 tầng:
 
 1. **Tầng 1: Thu thập dữ liệu thô (Raw Ingestion Layer)**
-   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap và danh mục việc làm ngành IT / Dữ liệu trên nền tảng TopCV.
+   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap (`twinnings_jobs_desc_*.xml`) và danh mục việc làm ngành IT / Dữ liệu trên nền tảng ITviec.
    - **Kiểm soát tốc độ (Crawler Rate-limit $\ge 3$s):** Cơ chế tạm dừng (delay) tối thiểu 3 giây giữa mỗi request HTTP liên tiếp. Đây là quy tắc thu thập dữ liệu có trách nhiệm (Polite Web Scraping) nhằm tôn trọng tài nguyên máy chủ, tuân thủ `robots.txt` và tránh kích hoạt cơ chế chặn tự động (Cloudflare / WAF 429 Too Many Requests).
    - **Bảo chứng tính toàn vẹn (Reproducibility):** Toàn bộ file HTML thô được lưu trữ nguyên bản tại `data/raw/{job_id}.html`. Sau khi thu thập xong, mã băm SHA-256 của từng file được đóng băng trong `docs/MANIFEST.json` để đảm bảo dữ liệu nghiên cứu có thể kiểm chứng độc lập.
 
@@ -194,7 +196,7 @@ trong đó $f_{11}$ là số lượng kỹ năng cả 2 tin đều yêu cầu, $
 - Trực quan hóa cây phả hệ (Dendrogram) và xác định số cụm tối ưu $k$ dựa trên đồ thị khoảng cách sáp nhập và Silhouette Score.
 
 #### Đánh giá độ tinh khiết phân cụm (Cluster Purity):
-Để kiểm chứng xem các cụm kỹ năng tự nhiên có tương ứng với các chức danh thực tế trên thị trường hay không, so sánh nhãn cụm $C = \{c_1, c_2, \dots, c_k\}$ với nhãn danh mục thực tế của TopCV $T = \{t_1, t_2, \dots, t_J\}$:
+Để kiểm chứng xem các cụm kỹ năng tự nhiên có tương ứng với các chức danh thực tế trên thị trường hay không, so sánh nhãn cụm $C = \{c_1, c_2, \dots, c_k\}$ với nhãn danh mục thực tế của ITviec $T = \{t_1, t_2, \dots, t_J\}$:
 $$\text{Purity}(C, T) = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
 Độ tinh khiết càng tiến gần 1.0 cho thấy các cụm kỹ năng phân lập ranh giới nghề nghiệp càng rõ ràng và khớp với thực tiễn.
 
@@ -254,14 +256,15 @@ fund_ds/
 ├── README.md                   # Tài liệu mô tả bài toán và phương pháp luận
 │
 ├── data/                       # Dữ liệu dự án (KHÔNG commit file lớn)
-│   ├── raw/                    # Snapshot HTML thô từ TopCV (.gitkeep)
+│   ├── raw/                    # Snapshot HTML thô từ ITviec (.gitkeep)
 │   ├── interim/                # Dữ liệu trung gian: jobs_parsed, jobs_clean (.gitkeep)
 │   └── processed/              # Dữ liệu đã sẵn sàng mô hình: skill_matrix (.gitkeep)
 │
 ├── docs/                       # Tài liệu thiết kế & phân rã công việc
 │   ├── DATA_CONTRACT.md        # Đặc tả chi tiết schema 4 tầng dữ liệu
 │   ├── DECISIONS.md            # Sổ tay ghi chép quyết định kỹ thuật
-│   ├── ASSUMPTIONS.md          # 9 giả định khoa học và cách kiểm chứng
+│   ├── ASSUMPTIONS.md          # 13 giả định khoa học và cách kiểm chứng (A10–A13: kết quả đổi nguồn TopCV → ITviec)
+│   ├── tos_review.md           # Bằng chứng kỹ thuật TopCV (No-Go) & ITviec (Go, chờ chốt khối lượng)
 │   ├── WORKFLOW.md             # Quy tắc phối hợp nhánh Git & xử lý xung đột
 │   ├── STANDUP.md              # Mẫu báo cáo tiến độ hàng ngày
 │   └── tasks/                  # Bảng giao việc chi tiết cho 5 vai trò
