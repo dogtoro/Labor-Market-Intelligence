@@ -42,10 +42,12 @@ Disallow: /v4/image/cv-template/cv-sample/toppy-list-mau-cv.png
 
 ## 2. Điều khoản sử dụng (ToS)
 
-Nguồn: _chưa đọc được — cần bổ sung_
+Nguồn: `https://www.topcv.vn/terms-of-service` — **không đọc được**, công cụ fetch trả về HTTP 403 ngay
+khi mở trang, nhiều khả năng cùng cơ chế Cloudflare đã chặn crawler (mục 3). Không còn nhiều ý nghĩa để
+cố đọc thêm vì mục 3–4 đã đủ căn cứ kết luận No-Go bằng phương pháp hiện tại, không phụ thuộc nội dung ToS.
 
-<!-- TODO: dán nội dung điều khoản liên quan đến crawl/scrape/bot, giới hạn sử dụng nội dung,
-     sở hữu trí tuệ. Trích dẫn nguyên văn kèm link. -->
+<!-- Nếu ai đó đọc được ToS này bằng trình duyệt thật, dán nguyên văn phần liên quan crawl/scrape/bot,
+     bản quyền nội dung vào đây để hoàn thiện hồ sơ, dù không đổi kết luận No-Go kỹ thuật. -->
 
 ## 3. Sự cố kỹ thuật ghi nhận trong quá trình review (pilot 29/09)
 
@@ -125,10 +127,51 @@ Sitemap: https://itviec.com/dunggiatminh.xml
 
 ## 6. Điều khoản sử dụng (ToS)
 
-Nguồn: _chưa đọc được — cần bổ sung, cùng tình trạng như TopCV (mục 2)_
+Nguồn: `https://itviec.com/blog/quy-che-hoat-dong-cua-itviec/` — "Quy chế hoạt động của ITviec", quy chế
+chung toàn site (khác với `https://itviec.com/blog/dieu-khoan-dieu-kien-cua-khao-sat/` — điều khoản riêng
+cho khảo sát, không liên quan).
 
-<!-- TODO: dán nội dung điều khoản itviec.com liên quan đến crawl/scrape/bot, giới hạn sử dụng
-     nội dung, sở hữu trí tuệ. Trích dẫn nguyên văn kèm link. -->
+**Trích nguyên văn 3 nhóm điều khoản liên quan (tất cả đều ghi rõ áp dụng cho "thành viên"/"ứng viên",
+tức người đã đăng ký tài khoản — crawler dự án không đăng nhập, không tạo tài khoản):**
+
+> **Mục V. Đảm bảo an toàn giao dịch:**
+> "Ứng viên tuyệt đối không sử dụng bất kỳ chương trình, công cụ hay hình thức nào khác để can thiệp vào
+> hệ thống hay làm thay đổi cấu trúc dữ liệu."
+> "Nghiêm cấm việc phát tán, truyền bá hay cổ vũ cho bất kỳ hoạt động nào nhằm can thiệp, phá hoại hay
+> xâm [nhập] của hệ thống website."
+
+> **Mục X. Quyền và nghĩa vụ Ban quản trị:**
+> "Website itviec.com giữ bản quyền mọi nội dung trên Website itviec.com theo các quy định pháp luật về
+> bảo hộ sở hữu trí tuệ tại Việt Nam."
+> "Nghiêm cấm mọi hành vi sao chép, sử dụng và phổ biến bất hợp pháp các quyền sở hữu trên."
+
+> **Mục VIII/XI. Quyền và trách nhiệm thành viên:**
+> "Thành viên không được thay đổi, chỉnh sửa, gán gép, copy, truyền bá, phân phối, cung cấp và tạo những
+> công cụ tương tự do Website itviec.com cung cấp cho một bên thứ ba nếu không được sự đồng ý của
+> Website itviec.com."
+
+**Phân tích (không phải kết luận pháp lý cuối cùng — cần giảng viên/Trưởng nhóm quyết định):**
+
+1. **Phạm vi áp dụng "thành viên":** Cả 3 nhóm điều khoản đều nằm trong mục ghi rõ áp dụng cho
+   "thành viên"/"ứng viên" đã đăng ký. Crawler dự án chỉ gửi request công khai, không đăng nhập, không
+   tạo tài khoản, không đồng ý điều khoản này ở bước nào (đúng `CLAUDE.md` mục 3: chỉ trang công khai,
+   không đăng nhập). Về hình thức hợp đồng, có thể lập luận điều khoản không ràng buộc client ẩn danh —
+   nhưng đây không phải kết luận chắc chắn, tuỳ cách diễn giải.
+2. **Mâu thuẫn với robots.txt:** `robots.txt` (văn bản dành riêng cho bot, mục 5) ghi tường minh
+   `Allow: /`, mời crawler vào. ToS (hướng tới thành viên) lại có ngôn ngữ rộng hơn cấm "công cụ... can
+   thiệp hệ thống". Điều khoản "can thiệp hệ thống/thay đổi cấu trúc dữ liệu" đọc giống chống hack/tấn
+   công/spam hơn là chống đọc dữ liệu công khai bằng request thông thường, nhưng không loại trừ hoàn
+   toàn cách diễn giải ngược lại.
+3. **Bản quyền nội dung** là điểm cần lưu ý nhất cho khâu báo cáo: lưu HTML thô (`data/raw/`) để phân
+   tích nội bộ khác với **tái xuất bản nguyên văn JD** trong báo cáo/slide. Trích xuất kỹ năng/thống kê
+   tổng hợp (không show lại toàn văn JD) là hình thức sử dụng khác hẳn sao chép/phổ biến, nhiều khả năng
+   hợp lý cho mục đích học thuật phi thương mại — nhưng đây là câu hỏi pháp lý thật, không tự kết luận.
+4. **Điều khoản cấm sao chép "công cụ tương tự"** — rõ ràng không áp dụng, dự án không xây sản phẩm
+   cạnh tranh với ITviec.
+
+**Kết luận mục 6: KHÔNG rõ ràng là Go hay No-Go.** Có tín hiệu trái chiều giữa robots.txt (mời crawl) và
+ToS (ngôn ngữ rộng chống "công cụ", dù hướng tới thành viên). Cần escalate lên giảng viên/Trưởng nhóm —
+đúng tình huống `docs/tasks/crawler.md` mục "Hỏi ai khi kẹt" đã dự trù.
 
 ## 7. Kiểm tra kỹ thuật (29/09, sau khi TopCV bị chặn)
 
@@ -149,16 +192,20 @@ Tất cả request dùng `curl -A "USTH-FDS-Project/2026 (contact: email@usth.ed
 
 ## 8. Kết luận Go/No-Go — ITviec
 
-**Điều kiện 1 (ToS không cấm):** _chưa xác nhận — cần đọc ToS (mục 6), giống tình trạng TopCV_
+**Điều kiện 1 (ToS không cấm):** **KHÔNG RÕ RÀNG.** Đã đọc được ToS (mục 6) — không có lệnh cấm crawl
+tường minh, nhưng có ngôn ngữ rộng ("công cụ... can thiệp hệ thống", "bản quyền nội dung") áp dụng cho
+"thành viên", trong khi robots.txt lại mời crawler công khai. Cần giảng viên/Trưởng nhóm quyết định cách
+diễn giải trước khi coi đây là "đạt".
 
 **Điều kiện 2 (HTML parse được):** **ĐẠT.** Xác nhận trực tiếp bằng 5 request thật (mục 7), có title/công ty/lương/JD trong HTML thô.
 
 **Điều kiện 3 (≥1.000 tin IT/Data):** **KHÔNG ĐẠT theo số tuyệt đối.** Sitemap đếm được **673 tin đang active**, thấp hơn ngưỡng 1.000 đặt ra ban đầu (`docs/ASSUMPTIONS.md` A3, `docs/tasks/crawler.md` DoD). Đây là hệ quả tự nhiên của việc chọn site **chuyên biệt IT** thay vì site đa ngành có category IT (TopCV) — ít tin hơn nhưng đúng phạm vi hơn, không lẫn tin ngành khác.
 
 **Việc cần nhóm quyết định (không tự chốt):**
-1. Có chấp nhận hạ ngưỡng "≥1.000 tin" xuống mức thực tế (~673, có thể tăng nhẹ nếu gộp cả `twinnings_jobs_desc_vn.xml` nếu danh sách khác bản EN) hay không — 673 tin vẫn là cỡ mẫu hợp lý cho Apriori/Hierarchical Clustering ở quy mô đồ án môn học, nhưng đây là thay đổi so với con số đã ghi trong tài liệu nhóm, cần đồng thuận.
-2. Có cần thử thêm 1 nguồn nữa (vd. `vietnamworks.com`, đã xác nhận HTTP 200 không Cloudflare ở mức trang chủ nhưng chưa đếm được khối lượng IT) để gộp cho đủ 1.000+, hay chấp nhận 673 là đủ.
-3. Đọc ToS itviec.com (mục 6) trước khi chốt Go hoàn toàn.
+1. **Diễn giải ToS (mục 6):** chấp nhận lập luận "điều khoản chỉ ràng buộc thành viên đăng nhập, crawler ẩn danh không bị ràng buộc" hay coi ngôn ngữ "công cụ can thiệp hệ thống" là đủ rộng để tự loại trừ ITviec luôn. Khuyến nghị: hỏi giảng viên trước khi crawl full, vì đây là rủi ro pháp lý/đạo đức chứ không phải kỹ thuật.
+2. Có chấp nhận hạ ngưỡng "≥1.000 tin" xuống mức thực tế (~673, có thể tăng nhẹ nếu gộp cả `twinnings_jobs_desc_vn.xml` nếu danh sách khác bản EN) hay không — 673 tin vẫn là cỡ mẫu hợp lý cho Apriori/Hierarchical Clustering ở quy mô đồ án môn học, nhưng đây là thay đổi so với con số đã ghi trong tài liệu nhóm, cần đồng thuận.
+3. Có cần thử thêm 1 nguồn nữa (vd. `vietnamworks.com`, đã xác nhận HTTP 200 không Cloudflare ở mức trang chủ nhưng chưa đếm được khối lượng IT) để gộp cho đủ 1.000+, hay chấp nhận 673 là đủ.
+4. Nếu Go: giới hạn báo cáo/slide chỉ dùng số liệu thống kê tổng hợp (skill counts, salary bins...), **không** tái xuất bản nguyên văn JD, để giảm rủi ro với điều khoản bản quyền (mục 6, điểm 3).
 
 ---
 
@@ -167,17 +214,21 @@ Tất cả request dùng `curl -A "USTH-FDS-Project/2026 (contact: email@usth.ed
 | Tiêu chí | TopCV | ITviec |
 |---|---|---|
 | robots.txt | Không chặn path dự kiến | Không chặn, tường minh `Allow: /` |
-| ToS | Chưa đọc | Chưa đọc |
+| ToS | Không đọc được (site 403 khi fetch) | **Đã đọc — không rõ ràng.** Ngôn ngữ rộng chống "công cụ can thiệp hệ thống" + bản quyền nội dung, nhưng chỉ ghi áp dụng cho "thành viên" đăng nhập (crawler không đăng nhập) |
 | Chặn bot (WAF) | **Có — Cloudflare JS Challenge toàn domain** | Không phát hiện |
 | HTML parse được (không cần JS) | Không xác nhận được (0 file tải về) | **Có, xác nhận trực tiếp** |
 | Số tin IT hiện có | Không đo được (bị chặn trước khi đếm) | **673** (đếm chính xác qua sitemap) |
 | Phạm vi ngành | Đa ngành, lọc qua category `c10026` | Chuyên biệt IT |
 
-**Đề xuất của Người 1:** chuyển sang `itviec.com` làm nguồn chính cho pilot 200–300 tin tiếp theo, vì đây là nguồn duy nhất trong 2 lựa chọn thực sự crawl được bằng phương pháp hợp lệ của dự án (UA trung thực, không giả trình duyệt, không login, không bypass WAF). Điểm nghẽn duy nhất là khối lượng tin (673 < 1.000), cần Trưởng nhóm quyết định có chấp nhận hay tìm thêm nguồn phụ.
+**Đề xuất của Người 1:** chuyển sang `itviec.com` làm nguồn chính cho pilot 200–300 tin tiếp theo — đây là
+nguồn duy nhất trong 2 lựa chọn thực sự crawl được bằng phương pháp hợp lệ của dự án (UA trung thực,
+không giả trình duyệt, không login, không bypass WAF), và robots.txt mời crawl tường minh. Còn 2 điểm
+nghẽn cần Trưởng nhóm/giảng viên quyết định trước khi Go hoàn toàn: (1) diễn giải ToS mục 6, (2) khối
+lượng tin (673 < 1.000).
 
 **Việc cần làm tiếp trước khi code crawler chính thức chuyển sang itviec.com:**
-- [ ] Đọc ToS itviec.com, điền mục 6
-- [ ] Trưởng nhóm chốt mục 8 (điều kiện 1 và 3)
+- [x] Đọc ToS itviec.com, điền mục 6 — xong, kết quả "không rõ ràng", cần người quyết định diễn giải
+- [ ] Trưởng nhóm/giảng viên chốt mục 8 (điều kiện 1 và 3)
 - [ ] Nếu Go: cập nhật `src/crawl/crawler.py` — đổi `BASE_URL`, đổi cách lấy URL tin sang dùng sitemap `twinnings_jobs_desc_*.xml` thay vì phân trang `/it-jobs?page=N` (ổn định hơn, có sẵn danh sách đầy đủ, đỡ tốn request dò trang)
-- [ ] Cập nhật `docs/ASSUMPTIONS.md` A1–A3 (xem cập nhật kèm theo, đã thêm A10–A12 cho itviec.com)
+- [x] Cập nhật `docs/ASSUMPTIONS.md` A1–A13 (đã thêm A10–A13 cho itviec.com/TopCV — xong)
 - [ ] Ghi quyết định cuối vào `docs/DECISIONS.md` mốc 1 khi Trưởng nhóm chốt
