@@ -1,5 +1,5 @@
 """
-Tests for salary parsing — các dạng lương phổ biến trên TopCV.
+Tests for salary parsing — các dạng lương phổ biến, gồm case thực tế ITviec.
 """
 
 import pytest
@@ -30,6 +30,13 @@ class TestSalaryFullRange:
         expected_max = 2500 * DEFAULT_USD_TO_VND / 1_000_000
         assert r.salary_min == pytest.approx(expected_min)
         assert r.salary_max == pytest.approx(expected_max)
+
+    def test_itviec_usd_range(self):
+        r = parse_salary("1,000 - 2,000 USD")
+        assert r.salary_status == "full_range"
+        assert r.currency_original == "USD"
+        assert r.salary_min == pytest.approx(25.5)
+        assert r.salary_max == pytest.approx(51.0)
 
     def test_raw_vnd_range(self):
         r = parse_salary("15,000,000 - 25,000,000 VND")
@@ -83,6 +90,13 @@ class TestSalaryUndisclosed:
         assert r.salary_status == "undisclosed"
         assert r.salary_min is None
         assert r.salary_max is None
+
+    def test_itviec_youll_love_it(self):
+        r = parse_salary("You'll love it")
+        assert r.salary_status == "undisclosed"
+        assert r.salary_min is None
+        assert r.salary_max is None
+        assert r.currency_original is None
 
     def test_none(self):
         r = parse_salary(None)

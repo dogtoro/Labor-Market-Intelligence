@@ -20,7 +20,7 @@ class TestTitleSimilarity:
 
     def test_similar(self):
         sim = title_similarity("Senior Data Engineer", "Sr. Data Engineer")
-        assert sim > 0.6  # similar but not identical
+        assert sim > 0.6
 
     def test_empty(self):
         assert title_similarity("", "something") == pytest.approx(0.0)
@@ -31,57 +31,54 @@ class TestTitleSimilarity:
 
 class TestFindDuplicates:
     def test_exact_duplicate(self):
-        """Cùng công ty, cùng title, cùng ngày → đánh dấu trùng."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-15"},
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-15"},
         ])
         dups = find_duplicates(df)
-        assert dups.sum() == 1  # 1 bản bị đánh dấu trùng
-        assert dups[0] == False  # Bản đầu giữ lại
-        assert dups[1] == True   # Bản sau bị đánh dấu trùng
+        assert dups.sum() == 1
+        assert dups[0] == False
+        assert dups[1] == True
+
+    def test_company_case_and_whitespace_normalized(self):
+        df = pd.DataFrame([
+            {"company": "Example Co", "title": "Data Engineer", "posted_date": "2026-09-15"},
+            {"company": "  example   co ", "title": "Data Engineer", "posted_date": "2026-09-16"},
+        ])
+        dups = find_duplicates(df)
+        assert dups.tolist() == [False, True]
 
     def test_different_company(self):
-        """Khác công ty → không trùng."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-15"},
             {"company": "XYZ", "title": "Data Engineer", "posted_date": "2026-09-15"},
         ])
-        dups = find_duplicates(df)
-        assert dups.sum() == 0
+        assert find_duplicates(df).sum() == 0
 
     def test_different_title(self):
-        """Cùng công ty, khác title → không trùng."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-15"},
             {"company": "ABC", "title": "Frontend Developer", "posted_date": "2026-09-15"},
         ])
-        dups = find_duplicates(df)
-        assert dups.sum() == 0
+        assert find_duplicates(df).sum() == 0
 
     def test_date_too_far(self):
-        """Cùng công ty, cùng title, nhưng ngày cách quá 7 ngày → không trùng."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-01"},
             {"company": "ABC", "title": "Data Engineer", "posted_date": "2026-09-20"},
         ])
-        dups = find_duplicates(df)
-        assert dups.sum() == 0
+        assert find_duplicates(df).sum() == 0
 
     def test_no_date(self):
-        """Nếu posted_date là null → vẫn đánh dấu trùng (không check date)."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Data Engineer", "posted_date": None},
             {"company": "ABC", "title": "Data Engineer", "posted_date": None},
         ])
-        dups = find_duplicates(df)
-        assert dups.sum() == 1
+        assert find_duplicates(df).sum() == 1
 
     def test_similar_title(self):
-        """Title gần giống (trên ngưỡng) → đánh dấu trùng."""
         df = pd.DataFrame([
             {"company": "ABC", "title": "Senior Data Engineer", "posted_date": "2026-09-15"},
             {"company": "ABC", "title": "Senior Data Engineer (HCM)", "posted_date": "2026-09-16"},
         ])
-        dups = find_duplicates(df, title_threshold=0.7)
-        assert dups.sum() == 1
+        assert find_duplicates(df, title_threshold=0.7).sum() == 1
