@@ -228,7 +228,33 @@ lượng tin (673 < 1.000).
 
 **Việc cần làm tiếp trước khi code crawler chính thức chuyển sang itviec.com:**
 - [x] Đọc ToS itviec.com, điền mục 6 — xong, kết quả "không rõ ràng", cần người quyết định diễn giải
-- [ ] Trưởng nhóm/giảng viên chốt mục 8 (điều kiện 1 và 3)
-- [ ] Nếu Go: cập nhật `src/crawl/crawler.py` — đổi `BASE_URL`, đổi cách lấy URL tin sang dùng sitemap `twinnings_jobs_desc_*.xml` thay vì phân trang `/it-jobs?page=N` (ổn định hơn, có sẵn danh sách đầy đủ, đỡ tốn request dò trang)
+- [x] Trưởng nhóm chốt mục 8 (giảng viên giao nhóm toàn quyền): Go ITviec kèm biện pháp, chấp nhận 681 tin — xem mục 10
+- [x] Cập nhật `src/crawl/crawler.py` sang ITviec, lấy URL từ sitemap `twinnings_jobs_desc_en.xml`
 - [x] Cập nhật `docs/ASSUMPTIONS.md` A1–A13 (đã thêm A10–A13 cho itviec.com/TopCV — xong)
-- [ ] Ghi quyết định cuối vào `docs/DECISIONS.md` mốc 1 khi Trưởng nhóm chốt
+- [x] Ghi quyết định cuối vào `docs/DECISIONS.md` (29/09 tối)
+
+---
+
+# 10. Pilot ITviec 20 tin & quyết định cuối (29/09 tối)
+
+**Cách chạy:** 20 tin chọn ngẫu nhiên (seed 2026) từ `twinnings_jobs_desc_en.xml`. 24 request (robots.txt,
+sitemap index, sitemap EN, sitemap VN, 20 trang tin), **24/24 HTTP 200**, delay 3.1s, không request nào tới
+path bị robots.txt chặn. Log: `data/crawl_log.csv`. HTML: `data/raw/<slug>.html` (không commit).
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Số tin | Sitemap EN 681 tin; sitemap VN 681 tin trùng 100% slug (chỉ khác prefix `/viec-lam-it/`) |
+| `job_id` | 4 số cuối URL **không unique** (612 giá trị / 681 tin) → dùng toàn bộ slug |
+| Lương trên giao diện | 20/20 "Sign in to view salary" |
+| Lương trong JSON-LD `JobPosting.baseSalary` | 5/20 có số (USD/tháng, dạng khoảng); 15/20 `"You'll love it"` |
+| Danh mục nghề | "Job Expertise" 20/20 tin (~15 giá trị khác nhau) |
+| Ngày đăng | JSON-LD `datePosted` 20/20, khoảng 26/08–29/09; "Posted X ago" trên giao diện lệch với `datePosted`; `<lastmod>` sitemap = giờ sinh sitemap |
+| Trường khác | Skills (≤6 tag/tin), Job Domain, địa điểm (JSON-LD `addressRegion`), `validThrough`; không có trường cấp bậc |
+
+**Quyết định (Trưởng nhóm, được giảng viên giao toàn quyền) — chi tiết `docs/DECISIONS.md`:**
+1. **Go ITviec** theo diễn giải: quy chế ràng buộc "thành viên" đăng nhập, crawler ẩn danh chỉ đọc trang
+   công khai mà robots.txt mời crawl. Biện pháp bắt buộc: chỉ công bố số liệu tổng hợp, không trích
+   nguyên văn JD, không commit/chia sẻ HTML thô, UA có email thật (`CRAWL_CONTACT`), delay ≥3s.
+2. **Chấp nhận 681 tin** thay ngưỡng ≥1.000.
+3. **Dùng lương trong JSON-LD** — dữ liệu site tự nhúng công khai cho máy đọc, không lách đăng nhập;
+   ghi rõ nguồn này trong báo cáo và phần hạn chế.

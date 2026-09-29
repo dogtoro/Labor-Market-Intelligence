@@ -14,8 +14,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 STEPS = {
-    "pilot": "Crawl thử 10 tin (pilot test)",
-    "crawl": "Crawl đầy đủ từ TopCV sitemap",
+    "pilot": "Crawl thử 20 tin ITviec (pilot, seed cố định)",
+    "crawl": "Crawl đầy đủ từ ITviec sitemap",
     "parse": "Parse HTML → data/interim/jobs_parsed.parquet",
     "clean": "Dedup + chuẩn hóa lương → data/processed/jobs_clean.parquet",
     "skills": "Trích kỹ năng → data/processed/skill_matrix.parquet",
