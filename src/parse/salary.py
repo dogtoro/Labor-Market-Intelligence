@@ -1,38 +1,25 @@
-"""
-Salary parsing — chuẩn hóa chuỗi lương thô từ TopCV.
+"""Salary parsing and normalization for ITviec salary strings.
 
-Hỗ trợ:
-  - "15 - 25 triệu"         → (15.0, 25.0, "full_range", "VND")
-  - "Lên đến 2000 USD"      → (None, 2000*rate, "one_sided", "USD")
-  - "Từ 10 triệu"           → (10.0, None, "one_sided", "VND")
-  - "Thỏa thuận"            → (None, None, "undisclosed", None)
-  - "Cạnh tranh"            → (None, None, "undisclosed", None)
-  - None / ""               → (None, None, "undisclosed", None)
-  - "1,500 - 2,500 USD"     → (1500*rate, 2500*rate, "full_range", "USD")
-  - "15,000,000 - 25,000,000 VND" → (15.0, 25.0, "full_range", "VND")
+All numeric outputs are in million VND/month.
 """
-
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
-# Tỷ giá mặc định — GHI RÕ TRONG ASSUMPTIONS.md
-# Giả định: 1 USD ≈ 25,500 VND (tỷ giá tham khảo, cập nhật khi có dữ liệu thật)
 DEFAULT_USD_TO_VND = 25_500
 DEFAULT_JPY_TO_VND = 170
+DEFAULT_WORKING_DAYS_PER_MONTH = 20
 
 
 @dataclass
 class SalaryResult:
-    """Kết quả chuẩn hóa lương."""
-    salary_min: float | None       # triệu VND/tháng
-    salary_max: float | None       # triệu VND/tháng
-    salary_status: str             # full_range | one_sided | undisclosed
-    currency_original: str | None  # VND, USD, JPY, ...
+    salary_min: float | None
+    salary_max: float | None
+    salary_status: str
+    currency_original: str | None
 
 
-# Patterns for undisclosed salary
 _UNDISCLOSED_PATTERNS = [
     re.compile(r"thỏa\s*thuận", re.IGNORECASE),
     re.compile(r"th(oa|oả)\s*thu(ậ|a)n", re.IGNORECASE),
@@ -41,117 +28,127 @@ _UNDISCLOSED_PATTERNS = [
     re.compile(r"negotiable", re.IGNORECASE),
 ]
 
-# Extract numbers (with commas/dots as thousand separators)
 _NUMBER_RE = re.compile(r"[\d]+(?:[.,]\d{3})*(?:\.\d+)?")
+_DAILY_RE = re.compile(
+    r"(?:/\s*(?:ng[aà]y|day)\b|per\s+day\b|mỗi\s+ng[aà]y\b|h[aằ]ng\s+ng[aà]y\b)",
+    re.IGNORECASE,
+)
 
 
 def _clean_number(s: str) -> float:
-    """Parse a number string, handling thousand separators."""
-    # Remove thousand separators (commas in "1,500" or dots in "1.500.000")
     cleaned = s.replace(",", "")
-    # If multiple dots remain, they're thousand separators (e.g., "1.500.000")
     parts = cleaned.split(".")
     if len(parts) > 2:
-        # All dots are thousand separators
         cleaned = "".join(parts)
     elif len(parts) == 2 and len(parts[1]) == 3:
-        # Dot is a thousand separator (e.g., "1.500")
         cleaned = "".join(parts)
     return float(cleaned)
 
 
 def _detect_currency(text: str) -> tuple[str, float]:
-    """Detect currency and return (currency_code, conversion_to_million_vnd)."""
     text_upper = text.upper()
     if "USD" in text_upper or "$" in text_upper:
         return "USD", DEFAULT_USD_TO_VND / 1_000_000
     if "JPY" in text_upper or "¥" in text_upper:
         return "JPY", DEFAULT_JPY_TO_VND / 1_000_000
-    # Default: VND
     return "VND", 1.0
 
 
+def _period_multiplier(text: str) -> float:
+    """Convert a pay-period value to monthly.
+
+    ITviec occasionally contains daily salary strings such as ``Từ $100/ngày``.
+    We use 20 working days/month; this assumption must be documented in
+    ASSUMPTIONS.md.
+    """
+    if _DAILY_RE.search(text):
+        return float(DEFAULT_WORKING_DAYS_PER_MONTH)
+    return 1.0
+
+
 def _to_million_vnd(value: float, currency: str, conversion_factor: float) -> float:
-    """Convert a raw number to triệu VND/tháng."""
     if currency == "VND":
         if value > 1_000_000:
-            # Raw VND (e.g., 15,000,000) → triệu
             return value / 1_000_000
-        elif value > 1000:
-            # Possibly thousand VND? Unlikely for salary, treat as raw
+        if value > 1000:
             return value / 1_000_000
-        else:
-            # Already in triệu (e.g., "15 triệu")
-            return value
+        return value
+    return value * conversion_factor
+
+
+def _convert_value(
+    value: float,
+    *,
+    currency: str,
+    conversion_factor: float,
+    has_trieu: bool,
+    period_multiplier: float,
+) -> float | None:
+    if has_trieu:
+        converted = value
     else:
-        # Foreign currency × conversion factor
-        return value * conversion_factor
+        converted = _to_million_vnd(value, currency, conversion_factor)
+    converted *= period_multiplier
+    if converted <= 0:
+        return None
+    return converted
 
 
 def parse_salary(raw: str | None) -> SalaryResult:
-    """Parse a raw salary string into structured components.
-
-    Returns:
-        SalaryResult with salary_min/max in triệu VND/tháng.
-    """
     if not raw or not raw.strip():
         return SalaryResult(None, None, "undisclosed", None)
 
     text = raw.strip()
 
-    # Check undisclosed patterns
     for pattern in _UNDISCLOSED_PATTERNS:
         if pattern.search(text):
             return SalaryResult(None, None, "undisclosed", None)
 
-    # Detect currency
     currency, conv = _detect_currency(text)
-
-    # Check for "triệu" keyword — numbers are already in millions
     has_trieu = bool(re.search(r"tri[eệ]u", text, re.IGNORECASE))
+    period_multiplier = _period_multiplier(text)
 
-    # Extract all numbers
     numbers = _NUMBER_RE.findall(text)
     if not numbers:
         return SalaryResult(None, None, "undisclosed", None)
-
     parsed_nums = [_clean_number(n) for n in numbers]
 
-    # "Lên đến" / "Up to" / "Tối đa" → one_sided (max only)
+    def cv(v: float) -> float | None:
+        return _convert_value(
+            v,
+            currency=currency,
+            conversion_factor=conv,
+            has_trieu=has_trieu,
+            period_multiplier=period_multiplier,
+        )
+
     if re.search(r"lên\s*đến|up\s*to|tối\s*đa|<=", text, re.IGNORECASE):
-        val = parsed_nums[0]
-        if has_trieu:
-            converted = val  # Already in triệu
-        else:
-            converted = _to_million_vnd(val, currency, conv)
-        return SalaryResult(None, converted, "one_sided", currency)
+        value = cv(parsed_nums[0])
+        if value is None:
+            return SalaryResult(None, None, "undisclosed", None)
+        return SalaryResult(None, value, "one_sided", currency)
 
-    # "Từ" / "From" / "Tối thiểu" → one_sided (min only)
     if re.search(r"^từ\s|from\s|tối\s*thiểu|>=", text, re.IGNORECASE):
-        val = parsed_nums[0]
-        if has_trieu:
-            converted = val
-        else:
-            converted = _to_million_vnd(val, currency, conv)
-        return SalaryResult(converted, None, "one_sided", currency)
+        value = cv(parsed_nums[0])
+        if value is None:
+            return SalaryResult(None, None, "undisclosed", None)
+        return SalaryResult(value, None, "one_sided", currency)
 
-    # Two numbers → full_range
     if len(parsed_nums) >= 2:
-        lo, hi = parsed_nums[0], parsed_nums[1]
-        if has_trieu:
-            lo_c, hi_c = lo, hi
-        else:
-            lo_c = _to_million_vnd(lo, currency, conv)
-            hi_c = _to_million_vnd(hi, currency, conv)
-        # Ensure lo <= hi
+        lo_c, hi_c = cv(parsed_nums[0]), cv(parsed_nums[1])
+
+        if lo_c is None and hi_c is None:
+            return SalaryResult(None, None, "undisclosed", None)
+        if lo_c is None:
+            return SalaryResult(None, hi_c, "one_sided", currency)
+        if hi_c is None:
+            return SalaryResult(lo_c, None, "one_sided", currency)
+
         if lo_c > hi_c:
             lo_c, hi_c = hi_c, lo_c
         return SalaryResult(lo_c, hi_c, "full_range", currency)
 
-    # Single number, no directional keyword → treat as one_sided (roughly)
-    val = parsed_nums[0]
-    if has_trieu:
-        converted = val
-    else:
-        converted = _to_million_vnd(val, currency, conv)
-    return SalaryResult(converted, None, "one_sided", currency)
+    value = cv(parsed_nums[0])
+    if value is None:
+        return SalaryResult(None, None, "undisclosed", None)
+    return SalaryResult(value, None, "one_sided", currency)

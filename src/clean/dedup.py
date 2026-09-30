@@ -1,94 +1,269 @@
 """Deduplicate parsed ITviec jobs and produce the Layer-3 clean dataset."""
 from __future__ import annotations
+
 import argparse
 import re
 from difflib import SequenceMatcher
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from src.contract import validate_clean
 from src.parse.salary import parse_salary
 
-PROJECT_ROOT=Path(__file__).resolve().parents[2]
-PARSED_PATH=PROJECT_ROOT/"data"/"interim"/"jobs_parsed.parquet"
-CLEAN_PATH=PROJECT_ROOT/"data"/"processed"/"jobs_clean.parquet"
-REPORT_PATH=PROJECT_ROOT/"reports"/"dedup_report.md"
-FUNNEL_PATH=PROJECT_ROOT/"reports"/"figures"/"data_funnel.png"
-RAW_DIR=PROJECT_ROOT/"data"/"raw"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PARSED_PATH = PROJECT_ROOT / "data" / "interim" / "jobs_parsed.parquet"
+CLEAN_PATH = PROJECT_ROOT / "data" / "processed" / "jobs_clean.parquet"
+REPORT_PATH = PROJECT_ROOT / "reports" / "dedup_report.md"
+FUNNEL_PATH = PROJECT_ROOT / "reports" / "figures" / "data_funnel.png"
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
 
-def title_similarity(a,b):
-    if not a or not b: return 0.0
-    return SequenceMatcher(None,a.lower().strip(),b.lower().strip()).ratio()
 
-def _company_key(value):
-    if value is None: return ""
-    return re.sub(r"\s+"," ",str(value)).strip().casefold()
+def _normalize_text(value) -> str:
+    if value is None:
+        return ""
+    return re.sub(r"\s+", " ", str(value)).strip().casefold()
 
-def find_duplicates(df,*,title_threshold=0.85,date_window_days=7):
-    is_dup=pd.Series(False,index=df.index,dtype=bool)
-    dates=pd.to_datetime(df["posted_date"],errors="coerce") if "posted_date" in df.columns else pd.Series(pd.NaT,index=df.index)
-    company_keys=df["company"].map(_company_key)
-    for _company,indices in df.groupby(company_keys,sort=False).groups.items():
-        indices=list(indices)
-        if len(indices)<2: continue
+
+def title_similarity(a, b) -> float:
+    if not a or not b:
+        return 0.0
+    return SequenceMatcher(None, _normalize_text(a), _normalize_text(b)).ratio()
+
+
+def jd_similarity(a, b) -> float:
+    """Similarity of JD text used as a conservative duplicate guard.
+
+    ITviec titles often share templates, so title similarity alone is unsafe.
+    Duplicate candidates must have nearly identical JD bodies as well.
+    """
+    if not a or not b:
+        return 0.0
+    return SequenceMatcher(
+        None,
+        _normalize_text(a),
+        _normalize_text(b),
+        autojunk=False,
+    ).ratio()
+
+
+def _company_key(value) -> str:
+    return _normalize_text(value)
+
+
+def _ordered_indices(group: pd.DataFrame, dates: pd.Series) -> list:
+    """Prefer newer postings as the retained record; keep stable order for missing dates."""
+    indices = list(group.index)
+    return sorted(
+        indices,
+        key=lambda idx: (
+            pd.notna(dates.at[idx]),
+            dates.at[idx] if pd.notna(dates.at[idx]) else pd.Timestamp.min,
+        ),
+        reverse=True,
+    )
+
+
+def find_duplicates(
+    df,
+    *,
+    title_threshold=0.85,
+    jd_threshold=0.95,
+    date_window_days=7,
+):
+    """Mark conservative duplicate job postings.
+
+    A row is considered duplicate only when:
+      1. company matches after normalization;
+      2. title similarity >= title_threshold;
+      3. JD similarity >= jd_threshold; and
+      4. when both dates exist, they are within date_window_days.
+
+    The newer posting is kept. Requiring near-identical JD prevents false
+    positives caused by ITviec's repeated title templates.
+    """
+    if "jd_text" not in df.columns:
+        raise ValueError("find_duplicates requires 'jd_text' for safe deduplication")
+
+    is_dup = pd.Series(False, index=df.index, dtype=bool)
+    dates = (
+        pd.to_datetime(df["posted_date"], errors="coerce")
+        if "posted_date" in df.columns
+        else pd.Series(pd.NaT, index=df.index)
+    )
+    company_keys = df["company"].map(_company_key)
+
+    for _company, group in df.groupby(company_keys, sort=False):
+        if len(group) < 2:
+            continue
+        indices = _ordered_indices(group, dates)
+
         for i in range(len(indices)):
-            if is_dup.at[indices[i]]: continue
-            for j in range(i+1,len(indices)):
-                if is_dup.at[indices[j]]: continue
-                a,b=indices[i],indices[j]
-                if title_similarity(df.at[a,"title"],df.at[b,"title"])<title_threshold: continue
-                da,db=dates.at[a],dates.at[b]
-                if pd.notna(da) and pd.notna(db) and abs((da-db).days)>date_window_days: continue
-                is_dup.at[b]=True
+            if is_dup.at[indices[i]]:
+                continue
+            for j in range(i + 1, len(indices)):
+                if is_dup.at[indices[j]]:
+                    continue
+
+                a, b = indices[i], indices[j]
+                if title_similarity(df.at[a, "title"], df.at[b, "title"]) < title_threshold:
+                    continue
+                if jd_similarity(df.at[a, "jd_text"], df.at[b, "jd_text"]) < jd_threshold:
+                    continue
+
+                da, db = dates.at[a], dates.at[b]
+                if pd.notna(da) and pd.notna(db):
+                    if abs((da - db).days) > date_window_days:
+                        continue
+
+                is_dup.at[b] = True
+
     return is_dup
 
+
 def _add_salary_columns(df):
-    out=df.copy()
-    parsed=[parse_salary(x) for x in out["salary_raw"].tolist()]
-    out["salary_min"]=pd.Series([r.salary_min for r in parsed],index=out.index,dtype="float64")
-    out["salary_max"]=pd.Series([r.salary_max for r in parsed],index=out.index,dtype="float64")
-    out["salary_status"]=[r.salary_status for r in parsed]
-    out["currency_original"]=[r.currency_original for r in parsed]
+    out = df.copy()
+    parsed = [parse_salary(x) for x in out["salary_raw"].tolist()]
+    out["salary_min"] = pd.Series(
+        [r.salary_min for r in parsed], index=out.index, dtype="float64"
+    )
+    out["salary_max"] = pd.Series(
+        [r.salary_max for r in parsed], index=out.index, dtype="float64"
+    )
+    out["salary_status"] = [r.salary_status for r in parsed]
+    out["currency_original"] = [r.currency_original for r in parsed]
     return out
 
-def _write_report(path,*,parsed_count,duplicate_count,clean_count,disclosed_count,title_threshold,date_window_days):
-    path.parent.mkdir(parents=True,exist_ok=True)
-    pct=(duplicate_count/parsed_count*100) if parsed_count else 0.0
-    salary_pct=(disclosed_count/clean_count*100) if clean_count else 0.0
-    path.write_text(f"""# Dedup report\n\nGenerated by `src/clean/dedup.py`.\n\n## Logic\n\nA later row is marked duplicate when:\n\n1. company matches after case/whitespace normalization;\n2. title similarity (SequenceMatcher) is **>= {title_threshold:.2f}**; and\n3. when both dates exist, `posted_date` differs by **<= {date_window_days} days**.\n\nIf either date is missing, the decision uses company + title only. Duplicate rows are removed from `jobs_clean.parquet`; retained rows have `is_duplicate = False`.\n\n## Counts\n\n- Parsed jobs: **{parsed_count:,}**\n- Duplicate rows removed: **{duplicate_count:,}** ({pct:.1f}%)\n- Unique jobs retained: **{clean_count:,}**\n- Jobs with disclosed/parseable salary: **{disclosed_count:,}** ({salary_pct:.1f}% of clean jobs)\n\nNo individual salary values are reported here.\n""",encoding="utf-8")
 
-def _write_funnel(path,*,raw_count,parsed_count,unique_count,disclosed_count):
-    path.parent.mkdir(parents=True,exist_ok=True)
-    labels=["Raw HTML","Parsed","Unique after dedup","Salary disclosed"]
-    values=[raw_count,parsed_count,unique_count,disclosed_count]
-    fig,ax=plt.subplots(figsize=(8,5))
-    bars=ax.bar(labels,values)
+def _write_report(
+    path,
+    *,
+    parsed_count,
+    duplicate_count,
+    clean_count,
+    disclosed_count,
+    title_threshold,
+    jd_threshold,
+    date_window_days,
+):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pct = duplicate_count / parsed_count * 100 if parsed_count else 0.0
+    salary_pct = disclosed_count / clean_count * 100 if clean_count else 0.0
+    path.write_text(
+        f"""# Dedup report
+
+Generated by `src/clean/dedup.py`.
+
+## Logic
+
+A row is marked duplicate only when:
+
+1. company matches after case/whitespace normalization;
+2. title similarity (SequenceMatcher) is **>= {title_threshold:.2f}**;
+3. JD similarity is **>= {jd_threshold:.2f}** (near-identical job description); and
+4. when both dates exist, `posted_date` differs by **<= {date_window_days} days**.
+
+The newer posting is retained. Requiring near-identical JD prevents false positives from ITviec title templates. Duplicate rows are removed from `jobs_clean.parquet`; retained rows have `is_duplicate = False`.
+
+## Counts
+
+- Parsed jobs: **{parsed_count:,}**
+- Duplicate rows removed: **{duplicate_count:,}** ({pct:.1f}%)
+- Unique jobs retained: **{clean_count:,}**
+- Jobs with disclosed/parseable salary: **{disclosed_count:,}** ({salary_pct:.1f}% of clean jobs)
+
+No individual salary values are reported here.
+""",
+        encoding="utf-8",
+    )
+
+
+def _write_funnel(path, *, raw_count, parsed_count, unique_count, disclosed_count):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    labels = ["Raw HTML", "Parsed", "Unique after dedup", "Salary disclosed"]
+    values = [raw_count, parsed_count, unique_count, disclosed_count]
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = ax.bar(labels, values)
     ax.set_title("Data funnel")
     ax.set_ylabel("Number of jobs")
-    ax.tick_params(axis="x",rotation=20)
-    for bar,value in zip(bars,values):
-        ax.text(bar.get_x()+bar.get_width()/2,bar.get_height(),f"{value:,}",ha="center",va="bottom")
-    fig.tight_layout(); fig.savefig(path,dpi=160); plt.close(fig)
+    ax.tick_params(axis="x", rotation=20)
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f"{value:,}",
+            ha="center",
+            va="bottom",
+        )
+    fig.tight_layout()
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
 
-def run_clean(parsed_path=PARSED_PATH,clean_path=CLEAN_PATH,report_path=REPORT_PATH,funnel_path=FUNNEL_PATH,raw_dir=RAW_DIR,*,title_threshold=0.85,date_window_days=7):
-    df=pd.read_parquet(parsed_path)
-    flags=find_duplicates(df,title_threshold=title_threshold,date_window_days=date_window_days)
-    duplicate_count=int(flags.sum())
-    clean=df.loc[~flags].copy().reset_index(drop=True)
-    clean=_add_salary_columns(clean)
-    clean["is_duplicate"]=False
-    clean["is_duplicate"]=clean["is_duplicate"].astype(bool)
+
+def run_clean(
+    parsed_path=PARSED_PATH,
+    clean_path=CLEAN_PATH,
+    report_path=REPORT_PATH,
+    funnel_path=FUNNEL_PATH,
+    raw_dir=RAW_DIR,
+    *,
+    title_threshold=0.85,
+    jd_threshold=0.95,
+    date_window_days=7,
+):
+    df = pd.read_parquet(parsed_path)
+    flags = find_duplicates(
+        df,
+        title_threshold=title_threshold,
+        jd_threshold=jd_threshold,
+        date_window_days=date_window_days,
+    )
+    duplicate_count = int(flags.sum())
+    clean = df.loc[~flags].copy().reset_index(drop=True)
+    clean = _add_salary_columns(clean)
+    clean["is_duplicate"] = False
+    clean["is_duplicate"] = clean["is_duplicate"].astype(bool)
+
     validate_clean(clean)
-    clean_path.parent.mkdir(parents=True,exist_ok=True); clean.to_parquet(clean_path,index=False)
-    disclosed_count=int((clean["salary_status"]!="undisclosed").sum())
-    _write_report(report_path,parsed_count=len(df),duplicate_count=duplicate_count,clean_count=len(clean),disclosed_count=disclosed_count,title_threshold=title_threshold,date_window_days=date_window_days)
-    raw_count=len(list(raw_dir.glob("*.html")))
-    _write_funnel(funnel_path,raw_count=raw_count,parsed_count=len(df),unique_count=len(clean),disclosed_count=disclosed_count)
+
+    clean_path.parent.mkdir(parents=True, exist_ok=True)
+    clean.to_parquet(clean_path, index=False)
+    disclosed_count = int((clean["salary_status"] != "undisclosed").sum())
+
+    _write_report(
+        report_path,
+        parsed_count=len(df),
+        duplicate_count=duplicate_count,
+        clean_count=len(clean),
+        disclosed_count=disclosed_count,
+        title_threshold=title_threshold,
+        jd_threshold=jd_threshold,
+        date_window_days=date_window_days,
+    )
+    raw_count = len(list(raw_dir.glob("*.html")))
+    _write_funnel(
+        funnel_path,
+        raw_count=raw_count,
+        parsed_count=len(df),
+        unique_count=len(clean),
+        disclosed_count=disclosed_count,
+    )
     print(f"Removed {duplicate_count} duplicates; kept {len(clean)} jobs.")
     print(f"Output: {clean_path}")
     return clean
 
+
 def main():
-    p=argparse.ArgumentParser(); p.add_argument("--parsed",type=Path,default=PARSED_PATH); p.add_argument("--out",type=Path,default=CLEAN_PATH); p.add_argument("--report",type=Path,default=REPORT_PATH); p.add_argument("--funnel",type=Path,default=FUNNEL_PATH); p.add_argument("--raw-dir",type=Path,default=RAW_DIR)
-    a=p.parse_args(); run_clean(a.parsed,a.out,a.report,a.funnel,a.raw_dir)
-if __name__=="__main__": main()
+    p = argparse.ArgumentParser()
+    p.add_argument("--parsed", type=Path, default=PARSED_PATH)
+    p.add_argument("--out", type=Path, default=CLEAN_PATH)
+    p.add_argument("--report", type=Path, default=REPORT_PATH)
+    p.add_argument("--funnel", type=Path, default=FUNNEL_PATH)
+    p.add_argument("--raw-dir", type=Path, default=RAW_DIR)
+    a = p.parse_args()
+    run_clean(a.parsed, a.out, a.report, a.funnel, a.raw_dir)
+
+
+if __name__ == "__main__":
+    main()
