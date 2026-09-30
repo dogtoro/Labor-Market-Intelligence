@@ -14,3 +14,4 @@
 | 29/09 tối | **`job_id` = toàn bộ slug URL** | 4 chữ số cuối URL KHÔNG unique (681 tin chỉ 612 đuôi khác nhau). | Trưởng nhóm |
 | 29/09 tối | **`posted_date` lấy từ JSON-LD `datePosted`** | Dòng "Posted X ago" trên giao diện lệch với `datePosted` (tin được đẩy lại); `<lastmod>` sitemap chỉ là giờ sinh sitemap. | Trưởng nhóm |
 | 29/09 tối | **`category` = trường "Job Expertise"** | Có ở 20/20 tin pilot, ~15 giá trị/20 tin → cần gộp thành 6–8 nhóm nghề khi tính purity (Người 4 đề xuất bảng gộp, ghi vào ASSUMPTIONS). | Trưởng nhóm |
+| 30/09 tối | **Layer 3 loại vật lý bản ghi trùng; các hàng được giữ có `is_duplicate = False`** | Các bản ghi xác định là trùng bị loại khỏi `jobs_clean.parquet`; cột `is_duplicate` vẫn giữ để tương thích Data Contract. Báo cáo dedup ghi tiêu chí và số lượng bị loại. | Người 2 |

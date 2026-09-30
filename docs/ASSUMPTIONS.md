@@ -7,9 +7,9 @@
 | A1 | ToS TopCV không cấm scraping dữ liệu công khai cho mục đích học thuật | Đọc ToS + robots.txt | Người 1 | Tối 29/09 | **Không còn áp dụng** — TopCV No-Go (DECISIONS 29/09, A13). |
 | A2 | TopCV render phía server (HTML thô chứa JD, không cần chạy JS) | Crawl thử 5 trang, mở bằng text editor, tìm JD | Người 1 | Tối 29/09 | **Không còn áp dụng** — TopCV No-Go (DECISIONS 29/09, A13). |
 | A3 | Có ≥1.000 tin IT/Data trên TopCV qua sitemap | Đếm URL trong sitemap thuộc danh mục IT | Người 1 | Tối 29/09 | **Không còn áp dụng** — TopCV No-Go (DECISIONS 29/09, A13). |
-| A4 | Tỷ lệ tin công khai lương ≥20–30% | Đếm trên 200 tin mẫu | Người 2 | Sáng 30/09 | **Pilot 20 tin (29/09): giao diện 0/20 (toàn bộ "Sign in to view salary"); JSON-LD `baseSalary` 5/20 = 25%.** Mẫu nhỏ, cần đo lại trên toàn bộ. Dùng JSON-LD theo DECISIONS 29/09. |
+| A4 | Tỷ lệ tin công khai lương ≥20–30% | Đếm trên toàn bộ dữ liệu crawl | Người 2 | 30/09 | **Đã kiểm — 172/688 tin có lương disclosed/parseable = 25.0%.** |
 | A5 | Trang tin tuyển dụng có trường danh mục nghề (category) trong HTML | Kiểm tra HTML mẫu | Người 2 | Sáng 30/09 | **Đã kiểm — ĐÚNG (ITviec).** Trường "Job Expertise" có ở 20/20 tin, ~15 giá trị khác nhau → cần gộp nhóm (A16). |
-| A6 | Cấu trúc HTML đồng nhất giữa các tin (cùng CSS class) | Parse 200 tin, đếm tỷ lệ thành công | Người 2 | Sáng 30/09 | **Pilot:** 20/20 trang có cùng cấu trúc (Skills / Job Expertise / Job Domain / JSON-LD `JobPosting`). Cần xác nhận trên toàn bộ. |
+| A6 | Cấu trúc HTML đồng nhất giữa các tin (cùng CSS class) | Parse toàn bộ HTML, đếm tỷ lệ thành công | Người 2 | 30/09 | **Đã kiểm — 688/688 HTML parse thành công = 100.0%; 0 lỗi trong `reports/parse_errors.csv`.** |
 | A7 | ~100–200 kỹ năng phủ được ≥80% mention trong JD IT/Data | Đối chiếu từ điển v1 với 20 JD mẫu | Người 3 | Trưa 30/09 | _chưa_ |
 | A8 | Lương chủ yếu ghi bằng VND hoặc USD | Đếm đơn vị tiền trên mẫu | Người 2 | Sáng 30/09 | **Pilot:** 5/5 tin có lương đều ghi USD/tháng (`unitText: MONTH`), dạng khoảng "1,000 - 2,000 USD". |
 | A9 | Tỷ giá USD/VND ổn định trong khoảng crawl, dùng 1 giá trị cố định là đủ | Tra tỷ giá Vietcombank ngày crawl | Người 2 | 01/10 | _chưa_ |
@@ -20,4 +20,5 @@
 | A14 | Lương JSON-LD `baseSalary` là lương gross/tháng | ITviec không ghi gross/net; kiểm tra JD của tin có lương xem có ghi "gross"/"net" | Người 2 | 30/09 | _chưa_ |
 | A15 | `datePosted` trong JSON-LD là ngày đăng gốc, đủ tin cậy để chia train/test theo thời gian | Pilot: 20/20 tin có `datePosted`, khoảng 26/08–29/09 (~5 tuần). Kiểm lại phân phối trên toàn bộ; nếu quá hẹp → chia ngẫu nhiên + bootstrap | Người 3 | 02/10 | _một phần_ |
 | A16 | Gộp "Job Expertise" thành 6–8 nhóm nghề không làm méo purity | Người 4 đề xuất bảng gộp, ≥1 người review | Người 4 | 01/10 | _chưa_ |
-| A17 | Cấp bậc (`level`) suy được từ tiêu đề (Intern/Tập sự, Junior, Middle, Senior, Lead, Manager…) | ITviec không có trường cấp bậc riêng (pilot 20/20). Đếm tỷ lệ tiêu đề khớp từ khoá | Người 2 | 30/09 | _chưa_ |
+| A17 | Cấp bậc (`level`) suy được từ tiêu đề (Intern/Tập sự, Junior, Middle, Senior, Lead, Manager…) | ITviec không có trường cấp bậc riêng; suy từ từ khóa trong tiêu đề và kiểm tra trên toàn bộ dữ liệu | Người 2 | 30/09 | **Đã kiểm một phần — suy được `level` cho 396/688 tin = 57.6%; 292 tin không suy được từ tiêu đề.** |
+| A18 | Lương theo ngày được quy đổi sang lương tháng bằng 20 ngày công/tháng | Rà soát các tin có đơn vị `/ngày`; nếu tin ghi cơ sở khác thì dùng cơ sở của tin | Người 2 | 30/09 | **Giả định đang dùng — daily salary × 20 ngày/tháng. Ví dụ `$100/ngày` → `$2,000/tháng` trước khi đổi sang VND.** |

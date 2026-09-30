@@ -19,6 +19,18 @@ class TestValidateParsed:
         with pytest.raises(ValueError, match="Thiếu cột bắt buộc"):
             validate_parsed(df)
 
+    def test_null_in_required_column(self):
+        df = pd.DataFrame([{
+            "job_id": "j1",
+            "url": "https://example.com/1",
+            "title": None,
+            "company": "ABC",
+            "jd_text": "text",
+            "crawled_at": "2026-09-25T10:00:00+07:00",
+        }])
+        with pytest.raises(ValueError, match="null"):
+            validate_parsed(df)
+
     def test_duplicate_job_id(self):
         df = pd.DataFrame([
             {"job_id": "j1", "url": "u1", "title": "t1", "company": "c1", "jd_text": "jd1", "crawled_at": "ct1"},
@@ -39,6 +51,17 @@ class TestValidateClean:
 
     def test_valid(self):
         validate_clean(self._make_valid())
+
+    def test_invalid_salary_status(self):
+        df = self._make_valid()
+        df.at[0, "salary_status"] = "invalid_value"
+        with pytest.raises(ValueError, match="không hợp lệ"):
+            validate_clean(df)
+
+    def test_missing_salary_status(self):
+        df = self._make_valid().drop(columns=["salary_status"])
+        with pytest.raises(ValueError, match="Thiếu cột bắt buộc"):
+            validate_clean(df)
 
     def test_zero_salary_rejected(self):
         df = self._make_valid()
@@ -79,6 +102,14 @@ class TestValidateSkills:
     def test_valid(self):
         validate_skills(pd.DataFrame([{"job_id": "j1", "python": 1, "sql": 0}]))
 
+    def test_missing_job_id(self):
+        with pytest.raises(ValueError, match="job_id"):
+            validate_skills(pd.DataFrame([{"python": 1, "sql": 0}]))
+
     def test_invalid_values(self):
         with pytest.raises(ValueError, match="không hợp lệ"):
             validate_skills(pd.DataFrame([{"job_id": "j1", "python": 2, "sql": 0}]))
+
+    def test_no_skill_columns(self):
+        with pytest.raises(ValueError, match="Không có cột kỹ năng"):
+            validate_skills(pd.DataFrame([{"job_id": "j1"}]))

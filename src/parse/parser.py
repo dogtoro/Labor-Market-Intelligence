@@ -14,6 +14,7 @@ import argparse
 import csv
 import json
 import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -69,10 +70,21 @@ def _clean_text(value: Any) -> str | None:
     return text or None
 
 
+def _ascii_fold(value: str) -> str:
+    """Remove Vietnamese diacritics for robust title-keyword matching."""
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
+
+
 def infer_level(title: str | None) -> str | None:
     """Infer one seniority label from the job title only (ASSUMPTION A17)."""
     if not title:
         return None
+
+    folded = _ascii_fold(title).casefold()
+    if re.search(r"\b(tap\s*su|thuc\s*tap(?:\s*sinh)?)\b", folded):
+        return "Intern"
+
     for label, pattern in _LEVEL_PATTERNS:
         if pattern.search(title):
             return label

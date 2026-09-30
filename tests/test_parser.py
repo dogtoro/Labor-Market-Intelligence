@@ -43,3 +43,8 @@ def test_level_examples():
     assert infer_level("Mid-Senior Fullstack Developer")=="Senior"
     assert infer_level("Tập sự tiềm năng AIOps/DevOps Engineer")=="Intern"
     assert infer_level("System Administrator") is None
+
+
+def test_level_vietnamese_unaccented_intern_titles():
+    assert infer_level("Tap su tiem nang Data Engineer") == "Intern"
+    assert infer_level("Thuc tap sinh AI Engineer") == "Intern"

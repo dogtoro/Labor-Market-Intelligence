@@ -10,6 +10,10 @@ from __future__ import annotations
 
 import pandas as pd
 
+# ---------------------------------------------------------------------------
+# Schema definitions
+# ---------------------------------------------------------------------------
+
 PARSED_REQUIRED_COLS = {
     "job_id": "object",
     "url": "object",
@@ -41,7 +45,12 @@ CLEAN_EXTRA_OPTIONAL = {
 SALARY_STATUS_VALUES = {"full_range", "one_sided", "undisclosed"}
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def _check_required_columns(df: pd.DataFrame, required: dict[str, str], layer: str) -> list[str]:
+    """Return errors for missing/null required columns."""
     errors: list[str] = []
     for col, expected_dtype in required.items():
         if col not in df.columns:
@@ -57,6 +66,7 @@ def _check_required_columns(df: pd.DataFrame, required: dict[str, str], layer: s
 
 
 def _check_unique(df: pd.DataFrame, col: str, layer: str) -> list[str]:
+    """Return an error when a key column contains duplicates."""
     if col in df.columns and df[col].duplicated().any():
         n_dup = df[col].duplicated().sum()
         return [f"[{layer}] Cột '{col}' có {n_dup} giá trị trùng (phải unique)"]
@@ -64,6 +74,7 @@ def _check_unique(df: pd.DataFrame, col: str, layer: str) -> list[str]:
 
 
 def _check_enum(df: pd.DataFrame, col: str, valid: set[str], layer: str) -> list[str]:
+    """Return an error for values outside the allowed enum."""
     if col not in df.columns:
         return []
     actual = set(df[col].dropna().unique())
@@ -74,6 +85,7 @@ def _check_enum(df: pd.DataFrame, col: str, valid: set[str], layer: str) -> list
 
 
 def _check_salary_semantics(df: pd.DataFrame) -> list[str]:
+    """Validate salary bounds against salary_status semantics."""
     errors: list[str] = []
     if not {"salary_status", "salary_min", "salary_max"}.issubset(df.columns):
         return errors
@@ -109,7 +121,12 @@ def _check_salary_semantics(df: pd.DataFrame) -> list[str]:
     return errors
 
 
+# ---------------------------------------------------------------------------
+# Public validators
+# ---------------------------------------------------------------------------
+
 def validate_parsed(df: pd.DataFrame) -> None:
+    """Validate a parsed DataFrame against the Layer-2 contract."""
     errors: list[str] = []
     errors += _check_required_columns(df, PARSED_REQUIRED_COLS, "parsed")
     errors += _check_unique(df, "job_id", "parsed")
@@ -119,6 +136,7 @@ def validate_parsed(df: pd.DataFrame) -> None:
 
 
 def validate_clean(df: pd.DataFrame) -> None:
+    """Validate a clean DataFrame against the Layer-3 contract."""
     errors: list[str] = []
     all_required = {**PARSED_REQUIRED_COLS, **CLEAN_EXTRA_REQUIRED}
     errors += _check_required_columns(df, all_required, "clean")
@@ -138,6 +156,7 @@ def validate_clean(df: pd.DataFrame) -> None:
 
 
 def validate_skills(df: pd.DataFrame) -> None:
+    """Validate a binary job-by-skill matrix against the Layer-4 contract."""
     errors: list[str] = []
 
     if "job_id" not in df.columns:
