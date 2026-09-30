@@ -26,8 +26,8 @@ class TestSalaryFullRange:
 
     def test_itviec_usd_range(self):
         r = parse_salary("1,000 - 2,000 USD")
-        assert r.salary_min == pytest.approx(25.5)
-        assert r.salary_max == pytest.approx(51.0)
+        assert r.salary_min == pytest.approx(25.78)
+        assert r.salary_max == pytest.approx(51.56)
 
     def test_raw_vnd_range(self):
         r = parse_salary("30,000,000 - 50,000,000đ")
@@ -59,7 +59,7 @@ class TestSalaryOneSided:
         assert r.salary_status == "one_sided"
         assert r.salary_min == pytest.approx(expected)
         assert r.salary_max is None
-        assert expected == pytest.approx(51.0)
+        assert expected == pytest.approx(51.56)
 
     def test_zero_lower_bound_becomes_one_sided(self):
         r = parse_salary("0 - 200 USD")

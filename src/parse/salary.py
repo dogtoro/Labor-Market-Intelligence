@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-DEFAULT_USD_TO_VND = 25_500
+DEFAULT_USD_TO_VND = 25_780
 DEFAULT_JPY_TO_VND = 170
 DEFAULT_WORKING_DAYS_PER_MONTH = 20
 
