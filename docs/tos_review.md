@@ -255,6 +255,6 @@ path bị robots.txt chặn. Log: `data/crawl_log.csv`. HTML: `data/raw/<slug>.h
 1. **Go ITviec** theo diễn giải: quy chế ràng buộc "thành viên" đăng nhập, crawler ẩn danh chỉ đọc trang
    công khai mà robots.txt mời crawl. Biện pháp bắt buộc: chỉ công bố số liệu tổng hợp, không trích
    nguyên văn JD, không commit/chia sẻ HTML thô, UA có email thật (`CRAWL_CONTACT`), delay ≥3s.
-2. **Chấp nhận 681 tin** thay ngưỡng ≥1.000.
+2. **Chấp nhận 681 tin** thay ngưỡng ≥1.000. _(Cập nhật 30/09: crawl đầy đủ lúc 21:22 thấy sitemap có 688 tin và tải đủ 688 — xem `docs/DECISIONS.md`.)_
 3. **Dùng lương trong JSON-LD** — dữ liệu site tự nhúng công khai cho máy đọc, không lách đăng nhập;
    ghi rõ nguồn này trong báo cáo và phần hạn chế.

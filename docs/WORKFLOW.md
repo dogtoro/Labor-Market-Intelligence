@@ -33,7 +33,7 @@
 | Ngày | Mốc | Việc chính |
 |------|-----|-----------|
 | T3 29/09 | **Mốc 1 (tối)** | Đọc ToS, pilot 20 tin ITviec, Go/No-Go — **xong: Go ITviec** |
-| T4 30/09 | | Crawl đầy đủ (qua đêm), parser, EDA draft |
+| T4 30/09 | | Crawl đầy đủ (qua đêm), parser, EDA draft — **crawl + parser + clean xong** (688 tin) |
 | T5 01/10 | **Mốc 2 (tối)** | Freeze dữ liệu + SHA-256, quyết định decision tree |
 | T6 02/10 | | Chạy model (Apriori, clustering, tree nếu giữ) |
 | T7 03/10 | | Đánh giá, hình vẽ, bản nháp báo cáo |

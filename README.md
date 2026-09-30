@@ -4,7 +4,7 @@
 > **Môn học:** Fundamentals of Data Science (USTH)  
 > **Repository:** [https://github.com/dogtoro/Labor-Market-Intelligence](https://github.com/dogtoro/Labor-Market-Intelligence)
 
-> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server. Sitemap có **681 tin IT** (29/09) — nhóm chấp nhận hạ ngưỡng ≥1.000 ban đầu. **Mốc 1 đã chốt Go ITviec** (Trưởng nhóm, được giảng viên giao toàn quyền), gồm cả việc dùng lương trong JSON-LD `baseSalary` vì giao diện ẩn lương sau đăng nhập. Bằng chứng, pilot 20 tin và quyết định tại [`docs/tos_review.md`](docs/tos_review.md) (mục 10), [`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
+> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server. Crawl đầy đủ tối 29/09 thu được **688 tin IT** (sitemap lúc 21:22; bản pilot lúc 16:41 có 681 tin) — nhóm chấp nhận hạ ngưỡng ≥1.000 ban đầu. **Mốc 1 đã chốt Go ITviec** (Trưởng nhóm, được giảng viên giao toàn quyền), gồm cả việc dùng lương trong JSON-LD `baseSalary` vì giao diện ẩn lương sau đăng nhập. Bằng chứng, pilot 20 tin và quyết định tại [`docs/tos_review.md`](docs/tos_review.md) (mục 10), [`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 
 ---
 
@@ -56,7 +56,7 @@ Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá d�
 | **Q3** | Các kỹ năng nào đóng vai trò **tiên quyết để phân định dải thu nhập** (thấp vs trung bình vs cao)? Có tồn tại thiên lệch hệ thống giữa tin công khai lương và tin giấu lương không? | **Decision Tree Classification (CART), Feature Importance & Missing Data Bias Analysis** |
 
 ### 1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận
-- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, 681 tin trong sitemap ngày 29/09 — xem `docs/tos_review.md`).
+- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, **688 tin** crawl tối 29/09; 172 tin (25,0%) có lương — xem `docs/tos_review.md`, `reports/dedup_report.md`).
 - **Cam kết sử dụng dữ liệu:** chỉ công bố số liệu tổng hợp, không trích nguyên văn JD, không commit/chia sẻ HTML thô (`docs/DECISIONS.md`, 29/09).
 - **Phương thức:** Thu thập 1 đợt (snapshot), có rate-limit chặt chẽ ($\ge 3$s/request), tuân thủ ToS và `robots.txt`.
 - **Tính toán tái lặp (Reproducibility):** Toàn bộ dữ liệu thô và trung gian được bảo chứng tính toàn vẹn bằng mã băm SHA-256 (`docs/MANIFEST.json`).
@@ -83,7 +83,7 @@ flowchart TD
     end
 
     subgraph L3["Tầng 3: Data Cleaning & Normalization"]
-        V1 -->|"Có"| Dedup["Deduplication Engine<br/>(Company + Title Sim >= 0.85 + Date <= 7d)"]
+        V1 -->|"Có"| Dedup["Deduplication Engine<br/>(Company + Title Sim >= 0.85 + JD Sim >= 0.95 + Date <= 7d)"]
         Dedup --> SalaryParser["Salary Normalization<br/>(VND/USD -> trieu, Min/Max/Bins)"]
         SalaryParser --> CleanDF["jobs_clean.parquet (data/processed/)"]
         CleanDF -->|"Contract Check: validate_clean()"| V2{"Hợp lệ clean?"}
@@ -113,7 +113,7 @@ flowchart TD
    - **Chốt chặn hợp đồng 1 (`validate_parsed`):** Áp dụng nguyên lý *Fail-fast* (thất bại sớm) ngay tại cửa ngõ dữ liệu. Hàm kiểm định bắt buộc dữ liệu không rỗng, đủ các cột bắt buộc, `job_id` là khóa chính duy nhất và không bị khuyết thiếu `title`, `company`. Nếu vi phạm, pipeline sẽ lập tức ngắt và báo lỗi (`Raise ValidationError`).
 
 3. **Tầng 3: Làm sạch & Chuẩn hóa nghiệp vụ (Data Cleaning & Normalization Layer)**
-   - **Khử trùng lặp đa tiêu chí (Deduplication Engine):** Tin tuyển dụng thực tế thường xuyên được các doanh nghiệp đăng lại nhiều lần trong tuần. Bộ lọc đối sánh bộ ba tiêu chuẩn: cùng công ty, độ tương đồng chuỗi tiêu đề $\ge 0.85$ (Gestalt Pattern Matching qua `difflib.SequenceMatcher`) và khoảng cách ngày đăng $\le 7$ ngày; tự động giữ lại bản ghi mới hơn và loại bỏ bản trùng lặp.
+   - **Khử trùng lặp đa tiêu chí (Deduplication Engine):** Tin tuyển dụng thực tế thường xuyên được các doanh nghiệp đăng lại nhiều lần trong tuần. Bộ lọc đối sánh bốn tiêu chuẩn: cùng công ty, độ tương đồng chuỗi tiêu đề $\ge 0.85$ (Gestalt Pattern Matching qua `difflib.SequenceMatcher`), độ tương đồng JD $\ge 0.95$ (JD gần như trùng hệt) và khoảng cách ngày đăng $\le 7$ ngày; tự động giữ lại bản ghi mới hơn và loại bỏ bản trùng lặp. Điều kiện JD được thêm vì tiêu đề ITviec thường theo khuôn mẫu (vd. "Middle/Senior Mobile Developer" vs "Middle/Senior Backend Developer"); trên dữ liệu 29/09 kết quả là **0 tin trùng** (`reports/dedup_report.md`).
    - **Chuẩn hóa thu nhập (Salary Normalization):** Nhận diện cấu trúc lương chuỗi tiếng Việt/tiếng Anh, quy đổi ngoại tệ (USD sang VNĐ triệu), phân loại vào 3 trạng thái (`full_range`, `one_sided`, `undisclosed`) và tính lương trung vị đại diện `salary_mid = (min + max) / 2`.
    - **Chốt chặn hợp đồng 2 (`validate_clean`):** Kiểm tra tính hợp lệ nghiệp vụ trên `data/processed/jobs_clean.parquet` (tin có đủ dải lương bắt buộc thỏa mãn $0 < \text{salary}_{\min} \le \text{salary}_{\max}$; các tin giấu lương bắt buộc các cột số liệu là null).
 
@@ -122,7 +122,7 @@ flowchart TD
    - **Chốt chặn hợp đồng 3 (`validate_skills`):** Bảo đảm ma trận kỹ năng chỉ chứa giá trị nhị phân $\{0, 1\}$ và không bị lỗi kiểu dữ liệu.
    - **Phân luồng dữ liệu cho 3 bài toán nghiên cứu:**
      - **Mô hình 1 (Apriori - Luật kết hợp) & Mô hình 2 (Clustering - Phân cụm công việc):** Sử dụng **100% dữ liệu** từ ma trận kỹ năng. Do hai mô hình này phân tích tổ hợp kỹ năng và cấu trúc phân nhóm nghề nghiệp tự nhiên, mọi tin tuyển dụng (kể cả có lương hay giấu lương) đều có giá trị đóng góp thông tin.
-     - **Mô hình 3 (Decision Tree - Phân lớp mức lương):** Đi theo đường nét đứt **"Chỉ tin có lương"** từ `jobs_clean.parquet`. Vì đây là mô hình học có giám sát (Supervised Learning) với nhãn mục tiêu là phân lớp thu nhập (`Low`, `Mid`, `High`), dữ liệu huấn luyện bắt buộc phải có thông tin mức lương rõ ràng (chiếm ~20% – 40% tổng dữ liệu). Phần lớn tin tuyển dụng ghi lương "Thoả thuận" (60% – 80%) được tách riêng để phục vụ bài toán **Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)** ở Mục 2.6 nhằm đánh giá mức độ đại diện của mô hình.
+     - **Mô hình 3 (Decision Tree - Phân lớp mức lương):** Đi theo đường nét đứt **"Chỉ tin có lương"** từ `jobs_clean.parquet`. Vì đây là mô hình học có giám sát (Supervised Learning) với nhãn mục tiêu là phân lớp thu nhập (`Low`, `Mid`, `High`), dữ liệu huấn luyện bắt buộc phải có thông tin mức lương rõ ràng (172/688 tin = 25,0%). Phần lớn tin tuyển dụng không công khai lương (516/688 = 75,0%) được tách riêng để phục vụ bài toán **Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)** ở Mục 2.6 nhằm đánh giá mức độ đại diện của mô hình.
 
 ---
 
@@ -133,14 +133,15 @@ flowchart TD
 - Lưu trữ bằng định dạng **Apache Parquet (Snappy compression)** giúp tối ưu dung lượng đĩa và tốc độ truy vấn cột so với CSV thông thường.
 
 #### Khử trùng lặp đa tiêu chí (Deduplication)
-Một nhà tuyển dụng thường đăng lại cùng một vị trí tuyển dụng nhiều lần trong vòng vài ngày hoặc đăng biến thể của cùng một tiêu đề. Khử trùng lặp hoàn toàn bằng ID sẽ bỏ sót các bản ghi này. Thuật toán khử trùng lặp sử dụng bộ ba tiêu chuẩn:
-$$\text{IsDuplicate}(J_1, J_2) \iff \begin{cases} \text{company}_1 = \text{company}_2 \\ \text{SequenceMatcher}(\text{title}_1, \text{title}_2) \ge 0.85 \\ |\text{date}_1 - \text{date}_2| \le 7 \text{ ngày} \end{cases}$$
-Trong đó hàm tương đồng `difflib.SequenceMatcher` tính tỷ lệ Gestalt Pattern Matching giữa 2 tiêu đề (được chuẩn hóa lowercase và strip whitespace). Bản ghi mới hơn sẽ được giữ lại, bản trùng bị loại bỏ.
+Một nhà tuyển dụng thường đăng lại cùng một vị trí tuyển dụng nhiều lần trong vòng vài ngày hoặc đăng biến thể của cùng một tiêu đề. Khử trùng lặp hoàn toàn bằng ID sẽ bỏ sót các bản ghi này. Thuật toán khử trùng lặp sử dụng bốn tiêu chuẩn:
+$$\text{IsDuplicate}(J_1, J_2) \iff \begin{cases} \text{company}_1 = \text{company}_2 \\ \text{SequenceMatcher}(\text{title}_1, \text{title}_2) \ge 0.85 \\ \text{SequenceMatcher}(\text{jd}_1, \text{jd}_2) \ge 0.95 \\ |\text{date}_1 - \text{date}_2| \le 7 \text{ ngày} \end{cases}$$
+Trong đó hàm tương đồng `difflib.SequenceMatcher` tính tỷ lệ Gestalt Pattern Matching giữa 2 tiêu đề (được chuẩn hóa lowercase và strip whitespace). Bản ghi mới hơn sẽ được giữ lại, bản trùng bị loại hẳn khỏi `jobs_clean.parquet` (các hàng còn lại có `is_duplicate = False` — `docs/DECISIONS.md` 30/09).
 
 #### Chuẩn hóa & Rời rạc hóa dải lương (Salary Normalization & Discretization)
-Chuỗi lương gốc trên tin tuyển dụng Việt Nam rất đa dạng: *"15 - 25 triệu"*, *"Lên đến 35 triệu"*, *"Từ 20 triệu"*, *"1,000 - 2,500 USD"*, *"Thoả thuận"*.
+Với ITviec, chuỗi lương lấy từ JSON-LD `baseSalary` (giao diện ẩn lương sau đăng nhập — `docs/DECISIONS.md` 29/09). Chuỗi rất đa dạng: *"1,000 - 2,000 USD"*, *"Up To 35M Gross"*, *"30,000,000 - 50,000,000đ"*, *"Từ $100/ngày"*, *"You'll love it"* (= không công khai). Trên 172 tin có lương: 151 ghi USD, 21 ghi VND.
 - **Quy đổi ngoại tệ:** Chuẩn hóa USD về đơn vị VNĐ triệu đồng:
-  $$\text{VND (triệu)} = \frac{\text{USD} \times 25{,}500}{1{,}000{,}000}$$
+  $$\text{VND (triệu)} = \frac{\text{USD} \times 25{,}780}{1{,}000{,}000}$$
+  (tỷ giá mua chuyển khoản Vietcombank ngày crawl 29/09 — `docs/ASSUMPTIONS.md` A9). Lương theo ngày quy về tháng bằng 20 ngày công (A18). Không điều chỉnh gross ↔ net vì phần lớn tin không ghi rõ (A14).
 - **Phân loại trạng thái lương (`salary_status`):**
   - `full_range`: Có cả cận dưới `salary_min` và cận trên `salary_max`.
   - `one_sided`: Chỉ có cận trên (*"Lên đến 30 triệu"*) hoặc chỉ có cận dưới (*"Từ 20 triệu"*).
@@ -149,6 +150,7 @@ Chuỗi lương gốc trên tin tuyển dụng Việt Nam rất đa dạng: *"15
   $$\text{salary}_{\text{mid}} = \frac{\text{salary}_{\min} + \text{salary}_{\max}}{2}$$
 - **Rời rạc hóa (Binning):** Phân chia thành 3 phân lớp phục vụ bài toán phân lớp:
   $$\text{SalaryGroup} = \begin{cases} \text{Low (< 15 triệu)} & \text{khi } \text{salary}_{\text{mid}} < 15 \\ \text{Mid (15 – 30 triệu)} & \text{khi } 15 \le \text{salary}_{\text{mid}} \le 30 \\ \text{High (> 30 triệu)} & \text{khi } \text{salary}_{\text{mid}} > 30 \end{cases}$$
+  > ⚠️ **Ngưỡng cố định 15/30 triệu không dùng được với dữ liệu ITviec** (lương cao, trung vị ≈ 38 triệu): trên 172 tin có lương chỉ cho Low 18 / Mid 29 / High 125, không đạt ≥50 mẫu/lớp. Phương án đang cân nhắc cho **Mốc 2 (tối 01/10)**: chia **tertile** trên 172 tin (60 / 55 / 57 mẫu, ranh giới ≈ 32 / 50 triệu). Quyết định cuối ghi tại `docs/DECISIONS.md`.
 
 #### Trích xuất kỹ năng bằng từ điển Regex (Skill Extraction)
 - Xây dựng từ điển `src/skills/skill_dict.json` gồm hơn 100 kỹ năng cốt lõi ngành IT/Data, phân cấp theo taxonomy: Programming Languages, Databases, Cloud & DevOps, Frameworks, Big Data & Analytics, AI/ML, Version Control.
@@ -241,7 +243,7 @@ Nhằm đảm bảo 5 thành viên và các AI coding agents làm việc độc 
 | Lớp dữ liệu | Hàm kiểm định | Quy chuẩn kiểm tra |
 | :--- | :--- | :--- |
 | **Parsed Layer** | `validate_parsed(df)` | Đủ các cột bắt buộc (`job_id`, `url`, `title`, `company`, `jd_text`, `crawled_at`), không null; `job_id` là khóa chính duy nhất, không null; `title` và `company` không null. |
-| **Clean Layer** | `validate_clean(df)` | `salary_status` thuộc tập `{'full_range', 'one_sided', 'undisclosed'}`; tin `full_range` bắt buộc có `0 < salary_min <= salary_max`; tin `undisclosed` có `salary_min`, `salary_max`, `salary_mid` là null. |
+| **Clean Layer** | `validate_clean(df)` | `salary_status` thuộc tập `{'full_range', 'one_sided', 'undisclosed'}`; `salary_min`/`salary_max` nếu có thì > 0; tin `full_range` bắt buộc có `salary_min <= salary_max`; tin `one_sided` có đúng một cận; tin `undisclosed` có `salary_min`, `salary_max` là null. (`salary_mid` không lưu trong file, tính ở bước model.) |
 | **Skill Layer** | `validate_skills(df)` | Cột đầu tiên là `job_id`; tất cả các cột kỹ năng còn lại chỉ chứa giá trị nhị phân $\{0, 1\}$; có ít nhất một cột kỹ năng. |
 
 ---

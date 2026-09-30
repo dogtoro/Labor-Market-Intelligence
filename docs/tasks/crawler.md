@@ -4,7 +4,7 @@
 Thu thập HTML thô từ ITviec cho tin tuyển dụng IT/Data, đảm bảo tuân thủ ToS + robots.txt. (Đổi từ TopCV tối 29/09 — `docs/DECISIONS.md`.)
 
 ## Đầu vào
-- Sitemap ITviec `https://itviec.com/twinnings_jobs_desc_en.xml` (681 tin, 29/09)
+- Sitemap ITviec `https://itviec.com/twinnings_jobs_desc_en.xml` (688 tin lúc crawl đầy đủ 21:22 29/09; pilot 16:41 có 681)
 - `CLAUDE.md` mục 3 (quy tắc crawl bắt buộc)
 
 ## Đầu ra
@@ -22,20 +22,24 @@ Thu thập HTML thô từ ITviec cho tin tuyển dụng IT/Data, đảm bảo tu
 | Việc | Hạn |
 |------|-----|
 | Đọc ToS + crawl thử (pilot 20 tin) | Tối 29/09 (Mốc 1) — **xong** |
-| Crawl đầy đủ | Trưa 30/09 (chạy qua đêm) |
+| Crawl đầy đủ | Trưa 30/09 — **xong tối 29/09** (21:22–22:19) |
 | Freeze dữ liệu + SHA-256 hash | Tối 01/10 (Mốc 2) |
 | Viết governance.md | 03/10 |
 
 ## Definition of Done
 - [x] `docs/tos_review.md` có trích dẫn cụ thể, kết luận rõ Go/No-Go (mục 10)
-- [ ] `data/raw/` chứa HTML của toàn bộ tin trong sitemap (681 tin ngày 29/09; ngưỡng ≥1.000 đã hạ — DECISIONS 29/09)
-- [ ] `crawl_log.csv` ghi đủ mọi request, delay ≥3s giữa các request
-- [ ] User-Agent đúng format: `USTH-FDS-Project/2026 (contact: ...)`
-- [ ] Không có request nào tới path bị robots.txt chặn
+- [x] `data/raw/` chứa HTML của toàn bộ tin trong sitemap — 688/688 file (ngưỡng ≥1.000 đã hạ — DECISIONS 29/09)
+- [x] `crawl_log.csv` ghi đủ mọi request, delay ≥3s giữa các request — 691 request ITviec, 100% HTTP 200, delay nhỏ nhất 3,32s (log gộp pilot + crawl đầy đủ, 719 dòng)
+- [ ] User-Agent đúng format: `USTH-FDS-Project/2026 (contact: ...)` — log không ghi UA; **Người 1 xác nhận** đã chạy với `CRAWL_CONTACT` là email thật của nhóm
+- [x] Không có request nào tới path bị robots.txt chặn (chỉ `/subscriptions/new` bị chặn; log không có path này)
 - [ ] SHA-256 hash khớp khi chạy lại `scripts/make_manifest.py`
 - [ ] `docs/governance.md` đủ 4 mục
 
-## Trạng thái 29/09 tối — Người 1 làm tiếp từ đây
+## Trạng thái 01/10
+- Crawl đầy đủ **xong** tối 29/09: 688 tin, HTML backup trên Drive (`Funny DS/raw`), log đã gộp vào `data/crawl_log.csv` trên `main`.
+- Còn lại: xác nhận UA (DoD ở trên); `python scripts/make_manifest.py` sau khi Người 2 chốt `data/processed/` ở Mốc 2 (tối 01/10); `docs/governance.md` (03/10).
+
+## Trạng thái 29/09 tối (lịch sử)
 - `src/crawl/crawler.py` đã viết lại cho ITviec (sitemap EN, `job_id` = slug, cache cả sitemap, log UTC+7,
   không đọc được robots.txt → dừng). 20 tin pilot đã nằm trong `data/raw/` **trên máy Trưởng nhóm** —
   máy khác chạy pilot sẽ tải lại 20 tin đó (cùng seed 2026).

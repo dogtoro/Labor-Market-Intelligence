@@ -12,7 +12,7 @@
 Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật/Khoa học Dữ liệu (Data Science, Data Engineering, AI/ML) tại Việt Nam năm 2026 đang chứng kiến sự dịch chuyển mạnh mẽ:
 - Sự bùng nổ của Generative AI và các hệ thống dữ liệu phân tán đòi hỏi kỹ sư kết hợp nhiều nhóm kỹ năng (skill bundles) thay vì chỉ biết một ngôn ngữ đơn lập.
 - Tiêu đề tin tuyển dụng trên các sàn như ITviec rất phong phú, nhưng không phản ánh đồng nhất ranh giới nghề nghiệp.
-- Khoảng 70% tin tuyển dụng ẩn thông tin mức lương ("Thoả thuận", "Cạnh tranh"), gây khó khăn cho việc định hướng mức thu nhập theo kỹ năng.
+- 75% tin tuyển dụng trên ITviec (516/688 tin, 29/09) không công khai mức lương, gây khó khăn cho việc định hướng mức thu nhập theo kỹ năng.
 
 ### 1.2 Mục tiêu và Câu hỏi nghiên cứu (Research Questions)
 
@@ -28,19 +28,19 @@ Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật
 
 ### 2.1 Kiến trúc Pipeline Dữ Liệu
 Pipeline xử lý theo mô hình 4 tầng độc lập:
-1. **Raw Layer (`data/raw/`):** Lưu trữ snapshot HTML thô từ sitemap ITviec (681 tin, 29/09), ghi nhận SHA-256 manifest.
+1. **Raw Layer (`data/raw/`):** Lưu trữ snapshot HTML thô từ sitemap ITviec (688 tin, crawl tối 29/09), ghi nhận SHA-256 manifest.
 2. **Parsed Layer (`data/interim/jobs_parsed.parquet`):** Trích xuất text có cấu trúc, kiểm tra hợp đồng qua `validate_parsed()`.
-3. **Cleaned Layer (`data/interim/jobs_clean.parquet`):** Khử trùng lặp đa tiêu chí, chuẩn hóa tiền tệ và dải lương, kiểm tra qua `validate_clean()`.
+3. **Cleaned Layer (`data/processed/jobs_clean.parquet`):** Khử trùng lặp đa tiêu chí, chuẩn hóa tiền tệ và dải lương, kiểm tra qua `validate_clean()`.
 4. **Feature & Model Layer (`data/processed/skill_matrix.parquet`):** Trích xuất ma trận kỹ năng nhị phân $N \times M$, kiểm tra qua `validate_skills()`.
 
 ### 2.2 Các bước tiền xử lý chuyên sâu
 
 #### 1. Khử trùng lặp (Deduplication):
-- **Điều kiện:** Cùng công ty AND độ tương đồng tiêu đề (SequenceMatcher ratio) $\ge 0.85$ AND ngày đăng cách nhau $\le 7$ ngày.
+- **Điều kiện:** Cùng công ty AND độ tương đồng tiêu đề (SequenceMatcher ratio) $\ge 0.85$ AND độ tương đồng JD $\ge 0.95$ AND ngày đăng cách nhau $\le 7$ ngày. Trên dữ liệu 29/09: 0 tin trùng.
 - Giữ lại bản ghi mới nhất, loại bỏ tin đăng lặp lại để tránh làm lệch phân phối kỹ năng.
 
 #### 2. Chuẩn hóa & Rời rạc hóa lương (Salary Normalization):
-- Quy đổi USD sang VNĐ triệu (tỷ giá cố định 25,500 VND/USD).
+- Quy đổi USD sang VNĐ triệu (tỷ giá cố định 25,780 VND/USD — A9); lương theo ngày × 20 ngày công (A18); không điều chỉnh gross ↔ net (A14).
 - Nhận diện 3 trạng thái:
   - `full_range`: Đầy đủ `salary_min`, `salary_max`. Tính `salary_mid = (min + max) / 2`.
   - `one_sided`: Chỉ có cận trên hoặc cận dưới.
@@ -49,6 +49,7 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
   - `Low`: $< 15$ triệu VND.
   - `Mid`: $15 - 30$ triệu VND.
   - `High`: $> 30$ triệu VND.
+  - ⚠️ Trên 172 tin có lương, ngưỡng cố định chỉ cho 18 / 29 / 125 mẫu — không đạt ≥50/lớp. Phương án cho Mốc 2: chia tertile (60 / 55 / 57 mẫu, ranh giới ≈ 32 / 50 triệu). Quyết định cuối ghi tại `DECISIONS.md`.
 
 #### 3. Trích xuất kỹ năng bằng Từ điển Regex (Skill Extraction):
 - Từ điển gồm $> 100$ kỹ năng IT/Data được chuẩn hóa với danh sách từ đồng nghĩa (aliases).
@@ -84,5 +85,5 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
 - **Khả năng diễn giải:** Xuất biểu đồ cây và bảng xếp hạng tầm quan trọng đặc trưng (Feature Importance).
 
 ### Phân tích Thiên lệch Dữ liệu Khuyết (Missing Salary Bias Analysis)
-- Đánh giá định lượng sự khác biệt về phân phối kỹ năng và cấp bậc giữa nhóm tin công khai lương ($30\%$) và nhóm tin ẩn lương ($70\%$).
+- Đánh giá định lượng sự khác biệt về phân phối kỹ năng và cấp bậc giữa nhóm tin công khai lương ($25\%$, 172 tin) và nhóm tin ẩn lương ($75\%$, 516 tin).
 - Xác định rõ phạm vi áp dụng và giới hạn suy luận của mô hình dự báo thu nhập.

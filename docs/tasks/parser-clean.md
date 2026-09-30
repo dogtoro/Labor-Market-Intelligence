@@ -29,12 +29,12 @@ Biến HTML thô thành bảng có cấu trúc, loại tin trùng, chuẩn hóa 
 | Chuẩn hóa lương + giao `jobs_clean.parquet` | Tối 01/10 (Mốc 2) |
 
 ## Definition of Done
-- [ ] `jobs_parsed.parquet` qua `validate_parsed()` không lỗi
-- [ ] `jobs_clean.parquet` qua `validate_clean()` không lỗi
-- [ ] Parse thành công ≥90% HTML (phần lỗi được log vào `reports/parse_errors.csv`)
-- [ ] Dedup report ghi rõ logic + số tin loại
-- [ ] Lương quy về triệu VND/tháng, tỷ giá + giả định ghi trong `ASSUMPTIONS.md`
-- [ ] `data_funnel.png` có ≥4 tầng với số liệu
+- [x] `jobs_parsed.parquet` qua `validate_parsed()` không lỗi
+- [x] `jobs_clean.parquet` qua `validate_clean()` không lỗi (gồm kiểm tra ngữ nghĩa lương mới)
+- [x] Parse thành công ≥90% HTML — 688/688 = 100%, `reports/parse_errors.csv` rỗng
+- [x] Dedup report ghi rõ logic + số tin loại (0 tin trùng sau khi thêm điều kiện JD ≥0,95)
+- [x] Lương quy về triệu VND/tháng, tỷ giá + giả định ghi trong `ASSUMPTIONS.md` (A9, A14, A18) — A9 còn thiếu link nguồn tỷ giá
+- [x] `data_funnel.png` có ≥4 tầng với số liệu
 
 ## Ghi chú từ pilot ITviec (29/09, 20 tin — `docs/tos_review.md` mục 10)
 Mẫu HTML: `data/raw/*.html` (20 file, xin Trưởng nhóm/Người 1 qua Drive — không có trong git).

@@ -74,7 +74,7 @@ pytest -v
 
 # Pipeline từng bước (Windows)
 python scripts/run_pipeline.py pilot    # Crawl thử 20 tin (cần CRAWL_CONTACT=<email nhóm>)
-python scripts/run_pipeline.py crawl    # Crawl đầy đủ ~681 tin, ~35 phút
+python scripts/run_pipeline.py crawl    # Crawl đầy đủ (688 tin ngày 29/09, ~40 phút) — ĐÃ XONG, dữ liệu trên Drive
 python scripts/run_pipeline.py parse    # Parse HTML → parquet
 python scripts/run_pipeline.py clean    # Dedup + chuẩn hóa lương
 python scripts/run_pipeline.py skills   # Trích kỹ năng → ma trận
