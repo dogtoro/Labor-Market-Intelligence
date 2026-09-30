@@ -4,7 +4,7 @@
 > **Môn học:** Fundamentals of Data Science (USTH)  
 > **Repository:** [https://github.com/dogtoro/Labor-Market-Intelligence](https://github.com/dogtoro/Labor-Market-Intelligence)
 
-> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server, nhưng chỉ có **673 tin IT đang active** (thấp hơn mốc ≥1.000 ban đầu). Bằng chứng đầy đủ và điều kiện còn treo (đọc ToS, chốt ngưỡng khối lượng) tại [`docs/tos_review.md`](docs/tos_review.md) và [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) (A10–A13).
+> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server. Sitemap có **681 tin IT** (29/09) — nhóm chấp nhận hạ ngưỡng ≥1.000 ban đầu. **Mốc 1 đã chốt Go ITviec** (Trưởng nhóm, được giảng viên giao toàn quyền), gồm cả việc dùng lương trong JSON-LD `baseSalary` vì giao diện ẩn lương sau đăng nhập. Bằng chứng, pilot 20 tin và quyết định tại [`docs/tos_review.md`](docs/tos_review.md) (mục 10), [`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 
 ---
 
@@ -56,7 +56,8 @@ Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá d�
 | **Q3** | Các kỹ năng nào đóng vai trò **tiên quyết để phân định dải thu nhập** (thấp vs trung bình vs cao)? Có tồn tại thiên lệch hệ thống giữa tin công khai lương và tin giấu lương không? | **Decision Tree Classification (CART), Feature Importance & Missing Data Bias Analysis** |
 
 ### 1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận
-- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, ~673 tin đang active tính đến 29/09 — xem `docs/tos_review.md`).
+- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, 681 tin trong sitemap ngày 29/09 — xem `docs/tos_review.md`).
+- **Cam kết sử dụng dữ liệu:** chỉ công bố số liệu tổng hợp, không trích nguyên văn JD, không commit/chia sẻ HTML thô (`docs/DECISIONS.md`, 29/09).
 - **Phương thức:** Thu thập 1 đợt (snapshot), có rate-limit chặt chẽ ($\ge 3$s/request), tuân thủ ToS và `robots.txt`.
 - **Tính toán tái lặp (Reproducibility):** Toàn bộ dữ liệu thô và trung gian được bảo chứng tính toàn vẹn bằng mã băm SHA-256 (`docs/MANIFEST.json`).
 
@@ -84,7 +85,7 @@ flowchart TD
     subgraph L3["Tầng 3: Data Cleaning & Normalization"]
         V1 -->|"Có"| Dedup["Deduplication Engine<br/>(Company + Title Sim >= 0.85 + Date <= 7d)"]
         Dedup --> SalaryParser["Salary Normalization<br/>(VND/USD -> trieu, Min/Max/Bins)"]
-        SalaryParser --> CleanDF["jobs_clean.parquet (data/interim/)"]
+        SalaryParser --> CleanDF["jobs_clean.parquet (data/processed/)"]
         CleanDF -->|"Contract Check: validate_clean()"| V2{"Hợp lệ clean?"}
         V2 -->|"Không"| Alert2["Raise ValidationError"]
     end
@@ -103,18 +104,18 @@ flowchart TD
 #### Chi tiết vận hành luồng dữ liệu qua 4 tầng:
 
 1. **Tầng 1: Thu thập dữ liệu thô (Raw Ingestion Layer)**
-   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap (`twinnings_jobs_desc_*.xml`) và danh mục việc làm ngành IT / Dữ liệu trên nền tảng ITviec.
+   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap `twinnings_jobs_desc_en.xml` của ITviec (bản `_vn.xml` trùng 100% nên không dùng). `job_id` = toàn bộ slug URL (4 số cuối URL không unique).
    - **Kiểm soát tốc độ (Crawler Rate-limit $\ge 3$s):** Cơ chế tạm dừng (delay) tối thiểu 3 giây giữa mỗi request HTTP liên tiếp. Đây là quy tắc thu thập dữ liệu có trách nhiệm (Polite Web Scraping) nhằm tôn trọng tài nguyên máy chủ, tuân thủ `robots.txt` và tránh kích hoạt cơ chế chặn tự động (Cloudflare / WAF 429 Too Many Requests).
    - **Bảo chứng tính toàn vẹn (Reproducibility):** Toàn bộ file HTML thô được lưu trữ nguyên bản tại `data/raw/{job_id}.html`. Sau khi thu thập xong, mã băm SHA-256 của từng file được đóng băng trong `docs/MANIFEST.json` để đảm bảo dữ liệu nghiên cứu có thể kiểm chứng độc lập.
 
 2. **Tầng 2: Phân tích cú pháp & Kiểm định cấu trúc (Parsing & Schema Validation Layer)**
-   - **Bóc tách dữ liệu:** Bộ trích xuất HTML kết hợp `selectolax` (tốc độ cao) và `BeautifulSoup4` phân giải HTML thô thành bảng dữ liệu gồm 10 trường thông tin chuẩn: `job_id`, `title`, `company`, `location`, `salary_raw`, `experience_raw`, `job_description`, `posted_date`, `url`. Kết quả lưu dưới dạng `data/interim/jobs_parsed.parquet`.
-   - **Chốt chặn hợp đồng 1 (`validate_parsed`):** Áp dụng nguyên lý *Fail-fast* (thất bại sớm) ngay tại cửa ngõ dữ liệu. Hàm kiểm định bắt buộc dữ liệu không rỗng, đủ 10 cột chuẩn, `job_id` là khóa chính duy nhất và không bị khuyết thiếu `title`, `company`. Nếu vi phạm, pipeline sẽ lập tức ngắt và báo lỗi (`Raise ValidationError`).
+   - **Bóc tách dữ liệu:** Bộ trích xuất HTML kết hợp `selectolax` (tốc độ cao) và `BeautifulSoup4` phân giải HTML thô thành bảng dữ liệu gồm 11 cột theo `docs/DATA_CONTRACT.md`: `job_id`, `url`, `title`, `company`, `level`, `location`, `posted_date`, `category`, `salary_raw`, `jd_text`, `crawled_at`. Với ITviec: `salary_raw` và `posted_date` lấy từ JSON-LD `JobPosting` (`baseSalary`, `datePosted`), `category` lấy từ trường "Job Expertise". Kết quả lưu dưới dạng `data/interim/jobs_parsed.parquet`.
+   - **Chốt chặn hợp đồng 1 (`validate_parsed`):** Áp dụng nguyên lý *Fail-fast* (thất bại sớm) ngay tại cửa ngõ dữ liệu. Hàm kiểm định bắt buộc dữ liệu không rỗng, đủ các cột bắt buộc, `job_id` là khóa chính duy nhất và không bị khuyết thiếu `title`, `company`. Nếu vi phạm, pipeline sẽ lập tức ngắt và báo lỗi (`Raise ValidationError`).
 
 3. **Tầng 3: Làm sạch & Chuẩn hóa nghiệp vụ (Data Cleaning & Normalization Layer)**
    - **Khử trùng lặp đa tiêu chí (Deduplication Engine):** Tin tuyển dụng thực tế thường xuyên được các doanh nghiệp đăng lại nhiều lần trong tuần. Bộ lọc đối sánh bộ ba tiêu chuẩn: cùng công ty, độ tương đồng chuỗi tiêu đề $\ge 0.85$ (Gestalt Pattern Matching qua `difflib.SequenceMatcher`) và khoảng cách ngày đăng $\le 7$ ngày; tự động giữ lại bản ghi mới hơn và loại bỏ bản trùng lặp.
    - **Chuẩn hóa thu nhập (Salary Normalization):** Nhận diện cấu trúc lương chuỗi tiếng Việt/tiếng Anh, quy đổi ngoại tệ (USD sang VNĐ triệu), phân loại vào 3 trạng thái (`full_range`, `one_sided`, `undisclosed`) và tính lương trung vị đại diện `salary_mid = (min + max) / 2`.
-   - **Chốt chặn hợp đồng 2 (`validate_clean`):** Kiểm tra tính hợp lệ nghiệp vụ trên `data/interim/jobs_clean.parquet` (tin có đủ dải lương bắt buộc thỏa mãn $0 < \text{salary}_{\min} \le \text{salary}_{\max}$; các tin giấu lương bắt buộc các cột số liệu là null).
+   - **Chốt chặn hợp đồng 2 (`validate_clean`):** Kiểm tra tính hợp lệ nghiệp vụ trên `data/processed/jobs_clean.parquet` (tin có đủ dải lương bắt buộc thỏa mãn $0 < \text{salary}_{\min} \le \text{salary}_{\max}$; các tin giấu lương bắt buộc các cột số liệu là null).
 
 4. **Tầng 4: Trích xuất đặc trưng & Khai phá mô hình (Feature Engineering & Modeling Layer)**
    - **Trích xuất ma trận kỹ năng (Skill Extraction):** Quét toàn bộ phần mô tả công việc (JD) qua từ điển chuẩn hóa $> 100$ kỹ năng IT/Data kết hợp ranh giới từ Regex `\b` (tránh nhầm lẫn các từ ngắn như "C", "R", "Go"). Tạo ra ma trận nhị phân $Jobs \times Skills$ tại `data/processed/skill_matrix.parquet`.
@@ -239,7 +240,7 @@ Nhằm đảm bảo 5 thành viên và các AI coding agents làm việc độc 
 
 | Lớp dữ liệu | Hàm kiểm định | Quy chuẩn kiểm tra |
 | :--- | :--- | :--- |
-| **Parsed Layer** | `validate_parsed(df)` | Không rỗng; đủ 10 cột chuẩn; `job_id` là khóa chính duy nhất, không null; `title` và `company` không null. |
+| **Parsed Layer** | `validate_parsed(df)` | Đủ các cột bắt buộc (`job_id`, `url`, `title`, `company`, `jd_text`, `crawled_at`), không null; `job_id` là khóa chính duy nhất, không null; `title` và `company` không null. |
 | **Clean Layer** | `validate_clean(df)` | `salary_status` thuộc tập `{'full_range', 'one_sided', 'undisclosed'}`; tin `full_range` bắt buộc có `0 < salary_min <= salary_max`; tin `undisclosed` có `salary_min`, `salary_max`, `salary_mid` là null. |
 | **Skill Layer** | `validate_skills(df)` | Cột đầu tiên là `job_id`; tất cả các cột kỹ năng còn lại chỉ chứa giá trị nhị phân $\{0, 1\}$; có ít nhất một cột kỹ năng. |
 
@@ -257,14 +258,14 @@ fund_ds/
 │
 ├── data/                       # Dữ liệu dự án (KHÔNG commit file lớn)
 │   ├── raw/                    # Snapshot HTML thô từ ITviec (.gitkeep)
-│   ├── interim/                # Dữ liệu trung gian: jobs_parsed, jobs_clean (.gitkeep)
-│   └── processed/              # Dữ liệu đã sẵn sàng mô hình: skill_matrix (.gitkeep)
+│   ├── interim/                # Dữ liệu trung gian: jobs_parsed (.gitkeep)
+│   └── processed/              # Dữ liệu đã sẵn sàng mô hình: jobs_clean, skill_matrix (.gitkeep)
 │
 ├── docs/                       # Tài liệu thiết kế & phân rã công việc
 │   ├── DATA_CONTRACT.md        # Đặc tả chi tiết schema 4 tầng dữ liệu
 │   ├── DECISIONS.md            # Sổ tay ghi chép quyết định kỹ thuật
-│   ├── ASSUMPTIONS.md          # 13 giả định khoa học và cách kiểm chứng (A10–A13: kết quả đổi nguồn TopCV → ITviec)
-│   ├── tos_review.md           # Bằng chứng kỹ thuật TopCV (No-Go) & ITviec (Go, chờ chốt khối lượng)
+│   ├── ASSUMPTIONS.md          # Giả định và cách kiểm chứng (A10–A17: nguồn ITviec & kết quả pilot)
+│   ├── tos_review.md           # Bằng chứng TopCV (No-Go) & ITviec (Go, pilot 20 tin — mục 10)
 │   ├── WORKFLOW.md             # Quy tắc phối hợp nhánh Git & xử lý xung đột
 │   ├── STANDUP.md              # Mẫu báo cáo tiến độ hàng ngày
 │   └── tasks/                  # Bảng giao việc chi tiết cho 5 vai trò

@@ -11,7 +11,7 @@
 ### 1.1 Bối cảnh thực tiễn
 Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật/Khoa học Dữ liệu (Data Science, Data Engineering, AI/ML) tại Việt Nam năm 2026 đang chứng kiến sự dịch chuyển mạnh mẽ:
 - Sự bùng nổ của Generative AI và các hệ thống dữ liệu phân tán đòi hỏi kỹ sư kết hợp nhiều nhóm kỹ năng (skill bundles) thay vì chỉ biết một ngôn ngữ đơn lập.
-- Tiêu đề tin tuyển dụng trên các sàn như TopCV rất phong phú, nhưng không phản ánh đồng nhất ranh giới nghề nghiệp.
+- Tiêu đề tin tuyển dụng trên các sàn như ITviec rất phong phú, nhưng không phản ánh đồng nhất ranh giới nghề nghiệp.
 - Khoảng 70% tin tuyển dụng ẩn thông tin mức lương ("Thoả thuận", "Cạnh tranh"), gây khó khăn cho việc định hướng mức thu nhập theo kỹ năng.
 
 ### 1.2 Mục tiêu và Câu hỏi nghiên cứu (Research Questions)
@@ -19,7 +19,7 @@ Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật
 | STT | Câu hỏi nghiên cứu | Ý nghĩa khoa học & ứng dụng | Phương pháp / Mô hình |
 |---|---|---|---|
 | **Q1** | Những nhóm kỹ năng nào thường xuyên **đồng xuất hiện** (co-occur) trong các bản mô tả công việc (JD)? | Tìm ra các bộ kỹ năng bổ trợ (complementary skills) cần học cùng lúc. | **Association Rules (Apriori)** |
-| **Q2** | Tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? | Tự động gom cụm vị trí công việc, so sánh với danh mục TopCV. | **Hierarchical Clustering (Jaccard + Ward/Average Linkage)** |
+| **Q2** | Tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? | Tự động gom cụm vị trí công việc, so sánh với trường "Job Expertise" của ITviec. | **Hierarchical Clustering (Jaccard + Ward/Average Linkage)** |
 | **Q3** | Kỹ năng, kinh nghiệm và địa điểm nào **dự báo dải lương cao**? | Giải thích quy luật định giá kỹ năng của thị trường. | **Decision Tree Classification (CART)** |
 
 ---
@@ -28,7 +28,7 @@ Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật
 
 ### 2.1 Kiến trúc Pipeline Dữ Liệu
 Pipeline xử lý theo mô hình 4 tầng độc lập:
-1. **Raw Layer (`data/raw/`):** Lưu trữ snapshot HTML thô từ sitemap TopCV, ghi nhận SHA-256 manifest.
+1. **Raw Layer (`data/raw/`):** Lưu trữ snapshot HTML thô từ sitemap ITviec (681 tin, 29/09), ghi nhận SHA-256 manifest.
 2. **Parsed Layer (`data/interim/jobs_parsed.parquet`):** Trích xuất text có cấu trúc, kiểm tra hợp đồng qua `validate_parsed()`.
 3. **Cleaned Layer (`data/interim/jobs_clean.parquet`):** Khử trùng lặp đa tiêu chí, chuẩn hóa tiền tệ và dải lương, kiểm tra qua `validate_clean()`.
 4. **Feature & Model Layer (`data/processed/skill_matrix.parquet`):** Trích xuất ma trận kỹ năng nhị phân $N \times M$, kiểm tra qua `validate_skills()`.
@@ -75,7 +75,7 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
 - **Xác định số cụm tối ưu $k$:** Biểu đồ Dendrogram kết hợp Silhouette Score.
 - **Đánh giá độ tinh khiết (Purity):**
   $$\text{Purity} = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
-  So sánh cụm dự đoán $c_k$ với danh mục tuyển dụng chuẩn $t_j$ của TopCV.
+  So sánh cụm dự đoán $c_k$ với danh mục tuyển dụng chuẩn $t_j$ ("Job Expertise" của ITviec, gộp thành 6–8 nhóm — A16).
 
 ### Phương pháp 3: Cây quyết định Phân lớp Dải Lương (Decision Tree Classifier)
 - **Mục tiêu:** Phân lớp tin tuyển dụng vào 3 mức lương: Low, Mid, High.

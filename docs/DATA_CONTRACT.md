@@ -11,7 +11,7 @@
 |---|---|
 | Vị trí | `data/raw/{job_id}.html` |
 | Format | HTML text, UTF-8 |
-| Naming | `job_id` lấy từ URL hoặc slug của tin tuyển dụng |
+| Naming | `job_id` = toàn bộ slug URL ITviec (vd. `data-engineer-...-fullerton-health-5950`). KHÔNG dùng 4 số cuối — không unique (DECISIONS 29/09) |
 | Git | **KHÔNG commit** — chỉ lưu local + backup Google Drive |
 
 ---
@@ -20,15 +20,15 @@
 
 | Cột | Kiểu | Bắt buộc | Mô tả |
 |-----|------|----------|-------|
-| `job_id` | `str` | ✅ | ID duy nhất, lấy từ URL |
+| `job_id` | `str` | ✅ | ID duy nhất = toàn bộ slug URL |
 | `url` | `str` | ✅ | URL đầy đủ của tin |
 | `title` | `str` | ✅ | Tiêu đề vị trí tuyển dụng |
 | `company` | `str` | ✅ | Tên công ty |
-| `level` | `str` | ❌ | Cấp bậc (Intern, Junior, Senior, Manager, …) |
+| `level` | `str` | ❌ | Cấp bậc (Intern, Junior, Senior, Manager, …). ITviec không có trường riêng → suy từ tiêu đề (A17) |
 | `location` | `str` | ❌ | Địa điểm làm việc |
-| `posted_date` | `str` | ❌ | Ngày đăng, ISO 8601 (YYYY-MM-DD) |
-| `category` | `str` | ❌ | Danh mục nghề trên TopCV (nếu có) |
-| `salary_raw` | `str` | ❌ | Chuỗi lương gốc, giữ nguyên từ HTML |
+| `posted_date` | `str` | ❌ | Ngày đăng, ISO 8601 (YYYY-MM-DD). Nguồn: JSON-LD `datePosted` (không dùng "Posted X ago") |
+| `category` | `str` | ❌ | Trường "Job Expertise" trên ITviec (giữ nguyên giá trị gốc; gộp nhóm làm ở bước model — A16) |
+| `salary_raw` | `str` | ❌ | Chuỗi lương gốc từ JSON-LD `baseSalary.value.value` (vd. "1,000 - 2,000 USD"; "You'll love it" = không công khai) |
 | `jd_text` | `str` | ✅ | Nội dung JD đã strip HTML tags |
 | `crawled_at` | `str` | ✅ | Thời điểm crawl, ISO 8601 với timezone UTC+7 |
 

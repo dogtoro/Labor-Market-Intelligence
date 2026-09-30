@@ -48,7 +48,7 @@ Sitemap → [crawl] → data/raw/*.html
 
 ```
 src/crawl/       ← Crawler + cache + rate limit + robots.txt
-src/parse/       ← HTML → parquet (12 cột), chuẩn hóa lương
+src/parse/       ← HTML → parquet (11 cột), chuẩn hóa lương
 src/clean/       ← Dedup, data quality funnel
 src/skills/      ← Từ điển kỹ năng + trích kỹ năng → ma trận nhị phân
 src/models/      ← Apriori, clustering, (decision tree)
@@ -73,8 +73,8 @@ pip install -r requirements.txt
 pytest -v
 
 # Pipeline từng bước (Windows)
-python scripts/run_pipeline.py pilot    # Crawl thử 10 tin
-python scripts/run_pipeline.py crawl    # Crawl đầy đủ
+python scripts/run_pipeline.py pilot    # Crawl thử 20 tin (cần CRAWL_CONTACT=<email nhóm>)
+python scripts/run_pipeline.py crawl    # Crawl đầy đủ ~681 tin, ~35 phút
 python scripts/run_pipeline.py parse    # Parse HTML → parquet
 python scripts/run_pipeline.py clean    # Dedup + chuẩn hóa lương
 python scripts/run_pipeline.py skills   # Trích kỹ năng → ma trận
@@ -89,7 +89,7 @@ python scripts/make_manifest.py         # Tạo manifest SHA-256
 ## 7. Data contract
 
 Xem chi tiết tại `docs/DATA_CONTRACT.md`. Tóm tắt:
-- `jobs_parsed.parquet`: 12 cột, kiểu dữ liệu cố định.
+- `jobs_parsed.parquet`: 11 cột, kiểu dữ liệu cố định. `job_id` = toàn bộ slug URL ITviec.
 - `jobs_clean.parquet`: thêm salary_min, salary_max, salary_status (enum), currency_original.
 - `skill_matrix.parquet`: job_id + cột nhị phân cho mỗi kỹ năng.
 - Dùng `src/contract.py` để validate. Test trong `tests/test_contract.py`.
