@@ -49,7 +49,7 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
   - `Low`: $< 15$ triệu VND.
   - `Mid`: $15 - 30$ triệu VND.
   - `High`: $> 30$ triệu VND.
-  - ⚠️ Trên 172 tin có lương, ngưỡng cố định chỉ cho 18 / 29 / 125 mẫu — không đạt ≥50/lớp. Phương án cho Mốc 2: chia tertile (60 / 55 / 57 mẫu, ranh giới ≈ 32 / 50 triệu). Quyết định cuối ghi tại `DECISIONS.md`.
+  - ⚠️ Trên 172 tin có lương, ngưỡng cố định chỉ cho 18 / 29 / 125 mẫu — không đạt ≥50/lớp. **Mốc 2 (01/10) đã chốt: chia tertile** (60 / 55 / 57 mẫu, ranh giới ≈ 32,2 / 50,0 triệu, tính bằng code); `one_sided` dùng cận duy nhất làm `salary_mid` (`DECISIONS.md`).
 
 #### 3. Trích xuất kỹ năng bằng Từ điển Regex (Skill Extraction):
 - Từ điển gồm $> 100$ kỹ năng IT/Data được chuẩn hóa với danh sách từ đồng nghĩa (aliases).

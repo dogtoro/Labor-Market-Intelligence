@@ -30,14 +30,14 @@ Thu thập HTML thô từ ITviec cho tin tuyển dụng IT/Data, đảm bảo tu
 - [x] `docs/tos_review.md` có trích dẫn cụ thể, kết luận rõ Go/No-Go (mục 10)
 - [x] `data/raw/` chứa HTML của toàn bộ tin trong sitemap — 688/688 file (ngưỡng ≥1.000 đã hạ — DECISIONS 29/09)
 - [x] `crawl_log.csv` ghi đủ mọi request, delay ≥3s giữa các request — 691 request ITviec, 100% HTTP 200, delay nhỏ nhất 3,32s (log gộp pilot + crawl đầy đủ, 719 dòng)
-- [ ] User-Agent đúng format: `USTH-FDS-Project/2026 (contact: ...)` — log không ghi UA; **Người 1 xác nhận** đã chạy với `CRAWL_CONTACT` là email thật của nhóm
+- [x] User-Agent đúng format: `USTH-FDS-Project/2026 (contact: ...)` — log không ghi UA; Người 1 xác nhận (01/10) đã chạy với `CRAWL_CONTACT` là email thật của nhóm
 - [x] Không có request nào tới path bị robots.txt chặn (chỉ `/subscriptions/new` bị chặn; log không có path này)
 - [ ] SHA-256 hash khớp khi chạy lại `scripts/make_manifest.py`
 - [ ] `docs/governance.md` đủ 4 mục
 
 ## Trạng thái 01/10
 - Crawl đầy đủ **xong** tối 29/09: 688 tin, HTML backup trên Drive (`Funny DS/raw`), log đã gộp vào `data/crawl_log.csv` trên `main`.
-- Còn lại: xác nhận UA (DoD ở trên); `python scripts/make_manifest.py` sau khi Người 2 chốt `data/processed/` ở Mốc 2 (tối 01/10); `docs/governance.md` (03/10).
+- Manifest `jobs_clean.parquet` đã tạo ở Mốc 2 (01/10, `docs/MANIFEST.json`). Còn lại: chạy lại `python scripts/make_manifest.py` khi Người 3 thêm `skill_matrix.parquet`; `docs/governance.md` (03/10).
 
 ## Trạng thái 29/09 tối (lịch sử)
 - `src/crawl/crawler.py` đã viết lại cho ITviec (sitemap EN, `job_id` = slug, cache cả sitemap, log UTC+7,

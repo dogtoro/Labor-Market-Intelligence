@@ -150,7 +150,7 @@ Với ITviec, chuỗi lương lấy từ JSON-LD `baseSalary` (giao diện ẩn 
   $$\text{salary}_{\text{mid}} = \frac{\text{salary}_{\min} + \text{salary}_{\max}}{2}$$
 - **Rời rạc hóa (Binning):** Phân chia thành 3 phân lớp phục vụ bài toán phân lớp:
   $$\text{SalaryGroup} = \begin{cases} \text{Low (< 15 triệu)} & \text{khi } \text{salary}_{\text{mid}} < 15 \\ \text{Mid (15 – 30 triệu)} & \text{khi } 15 \le \text{salary}_{\text{mid}} \le 30 \\ \text{High (> 30 triệu)} & \text{khi } \text{salary}_{\text{mid}} > 30 \end{cases}$$
-  > ⚠️ **Ngưỡng cố định 15/30 triệu không dùng được với dữ liệu ITviec** (lương cao, trung vị ≈ 38 triệu): trên 172 tin có lương chỉ cho Low 18 / Mid 29 / High 125, không đạt ≥50 mẫu/lớp. Phương án đang cân nhắc cho **Mốc 2 (tối 01/10)**: chia **tertile** trên 172 tin (60 / 55 / 57 mẫu, ranh giới ≈ 32 / 50 triệu). Quyết định cuối ghi tại `docs/DECISIONS.md`.
+  > ⚠️ **Ngưỡng cố định 15/30 triệu không dùng được với dữ liệu ITviec** (lương cao, trung vị ≈ 38 triệu): trên 172 tin có lương chỉ cho Low 18 / Mid 29 / High 125, không đạt ≥50 mẫu/lớp. **Mốc 2 (01/10) đã chốt: GIỮ Decision Tree, chia 3 lớp theo tertile** trên 172 tin có lương (60 / 55 / 57 mẫu, ranh giới ≈ 32,2 / 50,0 triệu, tính bằng code từ dữ liệu); `one_sided` dùng cận duy nhất làm `salary_mid` (`docs/DECISIONS.md`).
 
 #### Trích xuất kỹ năng bằng từ điển Regex (Skill Extraction)
 - Xây dựng từ điển `src/skills/skill_dict.json` gồm hơn 100 kỹ năng cốt lõi ngành IT/Data, phân cấp theo taxonomy: Programming Languages, Databases, Cloud & DevOps, Frameworks, Big Data & Analytics, AI/ML, Version Control.

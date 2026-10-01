@@ -1,0 +1,11 @@
+{
+  "files": [
+    {
+      "filename": "jobs_clean.parquet",
+      "sha256": "4663b5885742931868f6679744ac03c036f71d322af92579e3bdb690281d1e0f",
+      "size_bytes": 1137077,
+      "row_count": 688
+    }
+  ],
+  "combined_sha256": "0d9e3be648c357686960603fcfa654a4215447fd849e362f9283d648837cd23a"
+}

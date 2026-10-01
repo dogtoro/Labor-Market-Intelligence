@@ -2,6 +2,14 @@
 
 > Mỗi quyết định quan trọng ghi 1 dòng. Không xoá dòng cũ, chỉ thêm mới.
 
+**Tóm tắt kết quả các mốc** (chi tiết ở các dòng bên dưới — bảng chỉ thêm dòng mới ở cuối, nên dòng kết quả nằm sau dòng kế hoạch):
+
+| Mốc | Kết quả | Ngày |
+|-----|---------|------|
+| Mốc 1 — Go/No-Go crawl | **No-Go TopCV, GO ITviec** (kèm biện pháp ToS, chấp nhận <1.000 tin, dùng lương JSON-LD) | 29/09 tối |
+| Mốc 2 — Freeze dữ liệu + Giữ/Bỏ Decision Tree | **GIỮ Decision Tree**, chia 3 lớp lương theo tertile. Freeze `jobs_clean.parquet` (688 dòng) + `docs/MANIFEST.json`: **xong**. `skill_matrix.parquet` thêm vào manifest khi Người 3 sinh | 01/10 |
+| Mốc 3 — Khoá nội dung | _chưa đến_ | 04/10 tối |
+
 | Ngày | Quyết định | Lý do | Ai chốt |
 |------|-----------|-------|---------|
 | 29/09 tối | **MỐC 1 — Go / No-Go crawl** | Kiểm tra: (1) ToS TopCV không cấm, (2) HTML parse được, (3) ≥1.000 tin IT/Data. Nếu bất kỳ điều kiện fail → dừng, báo giảng viên, đổi nguồn. | Trưởng nhóm + Người 1 |
@@ -18,3 +26,5 @@
 | 30/09 | **Dữ liệu cuối cùng: 688 tin ITviec (crawl 21:22–22:19 29/09)** | Sitemap lúc crawl đầy đủ có 688 tin (pilot 16:41 có 681). Log `data/crawl_log.csv`: 691 request tới ITviec, 100% HTTP 200, delay nhỏ nhất 3,32s, 688 file HTML khớp 1–1 sitemap. Thay số 681 ở các dòng 29/09 bằng 688 cho mọi phân tích. HTML backup trên Drive, không commit. | Trưởng nhóm |
 | 30/09 tối | **Dedup yêu cầu thêm JD giống ≥0,95; giữ bản đăng mới hơn** | Chỉ dùng tiêu đề (≥0,85) loại nhầm 4 tin khác nhau (vd. Mobile vs Backend Developer, Data Engineer vs AI Engineer) vì tiêu đề ITviec theo khuôn mẫu. Sau sửa: 0 tin trùng trên 688 tin (`reports/dedup_report.md`). | Người 2 (Trưởng nhóm review) |
 | 01/10 | **Tỷ giá cố định 25.780 VND/USD; lương theo ngày × 20 ngày công; không điều chỉnh gross ↔ net** | Chi tiết và bằng chứng tại `docs/ASSUMPTIONS.md` A9, A14, A18. | Người 2 (Trưởng nhóm review) |
+| 01/10 | **MỐC 2 — KẾT QUẢ: GIỮ Decision Tree; nhãn lương chia 3 lớp theo tertile thay ngưỡng cố định 15/30 triệu** | Cả 2 điều kiện Mốc 2 đạt: tỷ lệ tin có lương 172/688 = **25,0%** (≥25%); chia tertile được **Low 60 / Mid 55 / High 57** (≥50 mỗi lớp). Ngưỡng cố định 15/30 triệu chỉ cho 18 / 29 / 125 vì lương ITviec cao (trung vị ≈ 38 triệu). Quy ước: `salary_mid` = trung bình 2 cận với `full_range`, = cận duy nhất với `one_sided` (20 tin, ghi vào phần hạn chế). Ranh giới tertile (≈ 32,2 / 50,0 triệu trên dữ liệu 29/09) **phải tính bằng code từ dữ liệu**, không gõ tay. | Trưởng nhóm |
+| 01/10 | **MỐC 2 — Freeze `data/processed/jobs_clean.parquet`** | File Người 2 upload Drive (688 dòng × 16 cột) qua `validate_clean()` và khớp 100% từng giá trị với bản Trưởng nhóm chạy lại từ code `main` (`3207964`). SHA-256 `4663b58857429318…` ghi trong `docs/MANIFEST.json`. Từ nay KHÔNG đổi schema (CLAUDE.md mục 4); mọi người tải đúng file này từ Drive và kiểm hash trước khi dùng. `make_manifest.py` bỏ qua file ẩn (`.gitkeep`) để hash tổng không lệch giữa Windows/Linux. | Trưởng nhóm |

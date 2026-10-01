@@ -41,7 +41,8 @@ def main():
         MANIFEST_PATH.write_text(json.dumps({"files": [], "note": "No processed data yet"}, indent=2, ensure_ascii=False))
         return
 
-    files = sorted(PROCESSED_DIR.glob("*"))
+    # Bỏ file ẩn (.gitkeep): Git trên Windows có thể đổi LF→CRLF, làm lệch combined hash
+    files = sorted(f for f in PROCESSED_DIR.glob("*") if not f.name.startswith("."))
     if not files:
         print("⚠ Không có file nào trong data/processed/.")
         MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)

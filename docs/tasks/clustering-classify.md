@@ -1,7 +1,7 @@
 # TASK BRIEF — Clustering + Phân lớp lương (Người 4)
 
 ## Mục tiêu
-Nhóm tin tuyển dụng theo kỹ năng (hierarchical clustering), đánh giá purity. Nếu Mốc 2 cho phép: phân lớp dải lương bằng decision tree.
+Nhóm tin tuyển dụng theo kỹ năng (hierarchical clustering), đánh giá purity. Phân lớp dải lương bằng decision tree — **Mốc 2 (01/10) đã chốt GIỮ** (`docs/DECISIONS.md`).
 
 ## Đầu vào
 - `data/processed/skill_matrix.parquet` (từ Người 3)
@@ -46,4 +46,11 @@ pytest tests/test_contract.py -v
 ## Ghi chú
 - **Bắt đầu prototype ngay** trên `tests/fixtures/sample_jobs_clean.parquet`.
 - Khoảng cách: **Jaccard** (1 − Jaccard similarity). Linkage: **Ward** hoặc **average**.
-- Quyết định giữ/bỏ decision tree: **tối 01/10 (Mốc 2)**.
+- Quyết định giữ/bỏ decision tree: **Mốc 2 (01/10) — GIỮ.** Các mục *(Nếu giữ)* ở trên đều phải làm.
+- **Nhãn lương (theo DECISIONS Mốc 2):**
+  - Chỉ dùng tin `salary_status != "undisclosed"` (172/688 tin).
+  - `salary_mid` = trung bình `salary_min`, `salary_max` với `full_range`; = cận duy nhất với `one_sided` (20 tin).
+  - Chia 3 lớp Low / Mid / High bằng tertile (`pd.qcut(salary_mid, 3)`), **tính ranh giới trong code**, không gõ tay
+    (trên dữ liệu 29/09: ≈ 32,2 / 50,0 triệu → 60 / 55 / 57 mẫu). Ghi ranh giới ra file kết quả để slide dùng lại.
+  - KHÔNG dùng ngưỡng cố định 15/30 triệu (chỉ cho 18 / 29 / 125 mẫu).
+  - Phần hạn chế: 20 tin `one_sided` dùng 1 cận; tin có lương chỉ chiếm 25% → `bias_analysis.md` so nhóm có/không lương.
