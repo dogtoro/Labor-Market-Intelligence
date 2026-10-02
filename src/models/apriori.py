@@ -6,11 +6,9 @@ import json
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
-def run_apriori(df: pd.DataFrame, min_supports: list[float] = [0.03, 0.05, 0.10], min_lift: float = 1.0) -> pd.DataFrame:
-    """Run Apriori with multiple min_support values and return the first one that yields rules."""
-    # MLxtend apriori expects boolean dataframe
+def run_apriori(df: pd.DataFrame, min_supports: list[float] = [0.03, 0.05, 0.10], min_lift: float = 1.2):
     bool_df = df.astype(bool)
-    
+    results = {}
     best_rules = pd.DataFrame()
     used_support = min_supports[0]
     
@@ -18,21 +16,20 @@ def run_apriori(df: pd.DataFrame, min_supports: list[float] = [0.03, 0.05, 0.10]
         try:
             frequent_itemsets = apriori(bool_df, min_support=ms, use_colnames=True)
             if frequent_itemsets.empty:
+                results[ms] = 0
                 continue
             rules = association_rules(frequent_itemsets, metric="lift", min_threshold=min_lift)
-            if not rules.empty:
+            results[ms] = len(rules)
+            if not rules.empty and best_rules.empty:
                 best_rules = rules
                 used_support = ms
-                break
         except Exception as e:
             print(f"Error with min_support {ms}: {e}")
+            results[ms] = 0
             
-    if best_rules.empty:
-        print("Warning: No rules found with given thresholds.")
-        return best_rules
-        
-    best_rules['min_support_used'] = used_support
-    return best_rules
+    if not best_rules.empty:
+        best_rules['min_support_used'] = used_support
+    return best_rules, results
 
 def format_itemset(frozen_set):
     return ", ".join(list(frozen_set))
@@ -42,21 +39,15 @@ def main():
     jobs_df = pd.read_parquet(PROJECT_ROOT / "data" / "processed" / "jobs_clean.parquet")
     skills_df = pd.read_parquet(PROJECT_ROOT / "data" / "processed" / "skill_matrix.parquet")
     
-    # Merge on job_id to get posted_date
     df = pd.merge(skills_df, jobs_df[['job_id', 'posted_date']], on='job_id', how='inner')
-    
-    # Ensure posted_date is datetime and sort
     df['posted_date'] = pd.to_datetime(df['posted_date'])
     df = df.sort_values('posted_date')
     
-    # Drop job_id and posted_date for rule mining
     feature_cols = [c for c in df.columns if c not in ('job_id', 'posted_date')]
-    
     if len(feature_cols) == 0:
         print("No skills available to run Apriori.")
         return
         
-    # Split 70% Train, 30% Test
     split_idx = int(len(df) * 0.7)
     train_df = df.iloc[:split_idx][feature_cols]
     test_df = df.iloc[split_idx:][feature_cols]
@@ -64,21 +55,18 @@ def main():
     print(f"Train size: {len(train_df)}, Test size: {len(test_df)}")
     
     print("Running Apriori on Train...")
-    train_rules = run_apriori(train_df, min_supports=[0.03, 0.05, 0.10], min_lift=1.0)
+    train_rules, support_results = run_apriori(train_df, min_supports=[0.03, 0.05, 0.10], min_lift=1.2)
     
     out_csv = PROJECT_ROOT / "data" / "processed" / "rules_train.csv"
     if not train_rules.empty:
-        # Format frozen sets to strings for CSV
         train_rules_csv = train_rules.copy()
         train_rules_csv['antecedents'] = train_rules_csv['antecedents'].apply(format_itemset)
         train_rules_csv['consequents'] = train_rules_csv['consequents'].apply(format_itemset)
         train_rules_csv.to_csv(out_csv, index=False)
         print(f"Saved {len(train_rules_csv)} rules to {out_csv}")
     else:
-        # Create empty placeholder file
         pd.DataFrame().to_csv(out_csv, index=False)
         
-    # Evaluate on Test
     print("Evaluating on Test...")
     eval_lines = [
         "# Đánh giá Association Rules (Train vs Test)",
@@ -86,29 +74,48 @@ def main():
         "## Kích thước tập dữ liệu",
         f"- Train: {len(train_df)} bản ghi (70% tin cũ)",
         f"- Test: {len(test_df)} bản ghi (30% tin mới)",
-        ""
+        "",
+        "## Kết quả chạy Apriori trên các mức min_support khác nhau (Train)",
     ]
+    
+    for ms, count in support_results.items():
+        eval_lines.append(f"- min_support = {ms}: tìm được {count} luật (lift > 1.2)")
+    eval_lines.append("")
     
     if train_rules.empty:
         eval_lines.append("Không tìm thấy luật kết hợp nào trên tập Train.")
     else:
-        # Get top 10 rules by lift
-        top_rules = train_rules.sort_values('lift', ascending=False).head(10)
+        # Sort and remove symmetric rules
+        sorted_rules = train_rules.sort_values('lift', ascending=False)
+        unique_rules = []
+        seen_pairs = set()
         
-        eval_lines.append("## Top 10 luật kết hợp (theo Lift)")
+        for idx, row in sorted_rules.iterrows():
+            ant = row['antecedents']
+            con = row['consequents']
+            pair = frozenset([ant, con])
+            if pair not in seen_pairs:
+                seen_pairs.add(pair)
+                unique_rules.append(idx)
+            if len(unique_rules) == 10:
+                break
+                
+        top_rules = sorted_rules.loc[unique_rules]
+        
+        eval_lines.append("## Top 10 luật kết hợp (theo Lift, đã bỏ luật đối xứng)")
         eval_lines.append("| Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |")
         eval_lines.append("|-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|")
         
-        # Calculate stats on test set
         test_bool = test_df.astype(bool)
         test_size = len(test_bool)
+        
+        lift_drops = []
         
         for _, row in top_rules.iterrows():
             ant = list(row['antecedents'])
             con = list(row['consequents'])
             both = ant + con
             
-            # Check if all features exist in test
             valid = all(f in test_bool.columns for f in both)
             
             if valid and test_size > 0:
@@ -125,6 +132,8 @@ def main():
             else:
                 test_supp, test_conf, test_lift = 0, 0, 0
                 
+            lift_drops.append(row['lift'] - test_lift)
+                
             ant_str = ", ".join(ant)
             con_str = ", ".join(con)
             
@@ -135,7 +144,18 @@ def main():
             
         eval_lines.append("")
         eval_lines.append("## Nhận xét (Overfit / Rule drift)")
-        eval_lines.append("So sánh Support, Confidence, Lift giữa tập Train (dữ liệu cũ) và Test (dữ liệu mới) cho thấy liệu có sự thay đổi xu hướng tuyển dụng hay luật kết hợp bị overfit vào một thời điểm.")
+        
+        avg_drop = np.mean(lift_drops) if lift_drops else 0
+        if avg_drop > 2.0:
+            eval_lines.append(f"Có sự sụt giảm rất mạnh về Lift trên tập Test so với tập Train (trung bình giảm {avg_drop:.2f}). "
+                              "Đây là hiện tượng rule drift / overfit rõ rệt: các luật kết hợp tìm được bị overfit vào thời điểm của tập Train (dữ liệu cũ) "
+                              "và không còn sức mạnh phân loại/kết hợp trên tập dữ liệu mới (Test).")
+        elif avg_drop > 0.5:
+            eval_lines.append(f"Có sự sụt giảm về Lift trên tập Test so với tập Train (trung bình giảm {avg_drop:.2f}). "
+                              "Hiện tượng rule drift có xuất hiện, cho thấy một số luật đã thay đổi theo thời gian hoặc bị overfit nhẹ vào tập Train.")
+        else:
+            eval_lines.append(f"Mức Lift trên tập Test khá tương đồng với tập Train (thay đổi trung bình {avg_drop:.2f}). "
+                              "Các luật kết hợp có tính ổn định cao qua thời gian.")
 
     out_eval = PROJECT_ROOT / "reports" / "rules_eval.md"
     out_eval.parent.mkdir(parents=True, exist_ok=True)

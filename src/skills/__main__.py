@@ -22,6 +22,14 @@ def main():
     dict_path = PROJECT_ROOT / "src" / "skills" / "skill_dict.json"
     matrix = build_skill_matrix(df, dict_path=dict_path)
     
+    # Filter jobs with no skills
+    skill_cols = [c for c in matrix.columns if c != "job_id"]
+    matrix = matrix[matrix[skill_cols].sum(axis=1) > 0]
+    print(f"Filtered jobs with no skills, remaining: {len(matrix)}")
+    
+    from src.contract import validate_skills
+    validate_skills(matrix)
+    
     out_path = PROJECT_ROOT / "data" / "processed" / "skill_matrix.parquet"
     print(f"Saving to {out_path}...")
     matrix.to_parquet(out_path, index=False)
