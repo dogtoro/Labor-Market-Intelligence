@@ -59,6 +59,14 @@ def run_step(step: str):
         subprocess.run([sys.executable, "-m", "src.clean.dedup"], cwd=PROJECT_ROOT, check=True)
         return
 
+    if step == "skills":
+        subprocess.run([sys.executable, "-m", "src.skills"], cwd=PROJECT_ROOT, check=True)
+        return
+
+    if step == "rules":
+        subprocess.run([sys.executable, "-m", "src.models.apriori"], cwd=PROJECT_ROOT, check=True)
+        return
+
     if step == "all":
         for s in ["parse", "clean", "skills", "rules", "cluster", "figures", "manifest"]:
             run_step(s)

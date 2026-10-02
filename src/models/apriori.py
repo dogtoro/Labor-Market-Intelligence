@@ -1,0 +1,147 @@
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from mlxtend.frequent_patterns import apriori, association_rules
+import json
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+def run_apriori(df: pd.DataFrame, min_supports: list[float] = [0.03, 0.05, 0.10], min_lift: float = 1.0) -> pd.DataFrame:
+    """Run Apriori with multiple min_support values and return the first one that yields rules."""
+    # MLxtend apriori expects boolean dataframe
+    bool_df = df.astype(bool)
+    
+    best_rules = pd.DataFrame()
+    used_support = min_supports[0]
+    
+    for ms in min_supports:
+        try:
+            frequent_itemsets = apriori(bool_df, min_support=ms, use_colnames=True)
+            if frequent_itemsets.empty:
+                continue
+            rules = association_rules(frequent_itemsets, metric="lift", min_threshold=min_lift)
+            if not rules.empty:
+                best_rules = rules
+                used_support = ms
+                break
+        except Exception as e:
+            print(f"Error with min_support {ms}: {e}")
+            
+    if best_rules.empty:
+        print("Warning: No rules found with given thresholds.")
+        return best_rules
+        
+    best_rules['min_support_used'] = used_support
+    return best_rules
+
+def format_itemset(frozen_set):
+    return ", ".join(list(frozen_set))
+
+def main():
+    print("Loading data...")
+    jobs_df = pd.read_parquet(PROJECT_ROOT / "data" / "processed" / "jobs_clean.parquet")
+    skills_df = pd.read_parquet(PROJECT_ROOT / "data" / "processed" / "skill_matrix.parquet")
+    
+    # Merge on job_id to get posted_date
+    df = pd.merge(skills_df, jobs_df[['job_id', 'posted_date']], on='job_id', how='inner')
+    
+    # Ensure posted_date is datetime and sort
+    df['posted_date'] = pd.to_datetime(df['posted_date'])
+    df = df.sort_values('posted_date')
+    
+    # Drop job_id and posted_date for rule mining
+    feature_cols = [c for c in df.columns if c not in ('job_id', 'posted_date')]
+    
+    if len(feature_cols) == 0:
+        print("No skills available to run Apriori.")
+        return
+        
+    # Split 70% Train, 30% Test
+    split_idx = int(len(df) * 0.7)
+    train_df = df.iloc[:split_idx][feature_cols]
+    test_df = df.iloc[split_idx:][feature_cols]
+    
+    print(f"Train size: {len(train_df)}, Test size: {len(test_df)}")
+    
+    print("Running Apriori on Train...")
+    train_rules = run_apriori(train_df, min_supports=[0.03, 0.05, 0.10], min_lift=1.0)
+    
+    out_csv = PROJECT_ROOT / "data" / "processed" / "rules_train.csv"
+    if not train_rules.empty:
+        # Format frozen sets to strings for CSV
+        train_rules_csv = train_rules.copy()
+        train_rules_csv['antecedents'] = train_rules_csv['antecedents'].apply(format_itemset)
+        train_rules_csv['consequents'] = train_rules_csv['consequents'].apply(format_itemset)
+        train_rules_csv.to_csv(out_csv, index=False)
+        print(f"Saved {len(train_rules_csv)} rules to {out_csv}")
+    else:
+        # Create empty placeholder file
+        pd.DataFrame().to_csv(out_csv, index=False)
+        
+    # Evaluate on Test
+    print("Evaluating on Test...")
+    eval_lines = [
+        "# Đánh giá Association Rules (Train vs Test)",
+        "",
+        "## Kích thước tập dữ liệu",
+        f"- Train: {len(train_df)} bản ghi (70% tin cũ)",
+        f"- Test: {len(test_df)} bản ghi (30% tin mới)",
+        ""
+    ]
+    
+    if train_rules.empty:
+        eval_lines.append("Không tìm thấy luật kết hợp nào trên tập Train.")
+    else:
+        # Get top 10 rules by lift
+        top_rules = train_rules.sort_values('lift', ascending=False).head(10)
+        
+        eval_lines.append("## Top 10 luật kết hợp (theo Lift)")
+        eval_lines.append("| Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |")
+        eval_lines.append("|-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|")
+        
+        # Calculate stats on test set
+        test_bool = test_df.astype(bool)
+        test_size = len(test_bool)
+        
+        for _, row in top_rules.iterrows():
+            ant = list(row['antecedents'])
+            con = list(row['consequents'])
+            both = ant + con
+            
+            # Check if all features exist in test
+            valid = all(f in test_bool.columns for f in both)
+            
+            if valid and test_size > 0:
+                ant_mask = test_bool[ant].all(axis=1)
+                con_mask = test_bool[con].all(axis=1)
+                both_mask = test_bool[both].all(axis=1)
+                
+                test_ant_supp = ant_mask.sum() / test_size
+                test_con_supp = con_mask.sum() / test_size
+                test_supp = both_mask.sum() / test_size
+                
+                test_conf = test_supp / test_ant_supp if test_ant_supp > 0 else 0
+                test_lift = test_conf / test_con_supp if test_con_supp > 0 else 0
+            else:
+                test_supp, test_conf, test_lift = 0, 0, 0
+                
+            ant_str = ", ".join(ant)
+            con_str = ", ".join(con)
+            
+            eval_lines.append(
+                f"| {ant_str} | {con_str} | {row['support']:.3f} | {row['confidence']:.3f} | {row['lift']:.3f} "
+                f"| {test_supp:.3f} | {test_conf:.3f} | {test_lift:.3f} |"
+            )
+            
+        eval_lines.append("")
+        eval_lines.append("## Nhận xét (Overfit / Rule drift)")
+        eval_lines.append("So sánh Support, Confidence, Lift giữa tập Train (dữ liệu cũ) và Test (dữ liệu mới) cho thấy liệu có sự thay đổi xu hướng tuyển dụng hay luật kết hợp bị overfit vào một thời điểm.")
+
+    out_eval = PROJECT_ROOT / "reports" / "rules_eval.md"
+    out_eval.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_eval, "w", encoding="utf-8") as f:
+        f.write("\n".join(eval_lines))
+    print(f"Saved evaluation to {out_eval}")
+
+if __name__ == "__main__":
+    main()
