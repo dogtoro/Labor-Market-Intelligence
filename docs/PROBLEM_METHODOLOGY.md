@@ -73,7 +73,7 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
 - **Độ đo khoảng cách Jaccard:**
   $$d_J(\mathbf{u}, \mathbf{v}) = 1 - \frac{|\mathbf{u} \cap \mathbf{v}|}{|\mathbf{u} \cup \mathbf{v}|}$$
 - **Phương pháp liên kết:** Weighted Linkage (WPGMA). Ward không hợp lệ với Jaccard; Average bị chaining (DECISIONS 03/10).
-- **Xác định số cụm tối ưu $k$:** Dendrogram + Silhouette, $k \in [4, 8]$ với cụm nhỏ nhất ≥ 15 tin.
+- **Xác định số cụm tối ưu $k$:** Dendrogram + Silhouette, $k \in [4, 8]$; cụm < 15 tin coi là nhiễu (nhãn -1); $k$ hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn $k$ có Silhouette cao nhất (DECISIONS 04/10). Purity tính trên tin không phải nhiễu.
 - **Đánh giá độ tinh khiết (Purity):**
   $$\text{Purity} = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
   So sánh cụm dự đoán $c_k$ với danh mục tuyển dụng chuẩn $t_j$ ("Job Expertise" của ITviec, 72 giá trị gộp thành 10 nhóm — A16, đã review).

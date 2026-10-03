@@ -198,7 +198,7 @@ trong đó $f_{11}$ là số lượng kỹ năng cả 2 tin đều yêu cầu, $
 - Bắt đầu với mỗi tin là một cụm riêng lẻ.
 - Gom dần các cụm gần nhau nhất theo **Weighted Linkage (WPGMA)**. Ward không hợp lệ với Jaccard; Average bị hiện tượng chaining (1 cụm chứa 95% tin) — xem `docs/DECISIONS.md` 03/10.
 - Trước khi phân cụm: bỏ kỹ năng mềm/công cụ quản lý, kỹ năng xuất hiện > 40% số tin hoặc < 10 tin, và tin còn < 2 kỹ năng.
-- Trực quan hóa Dendrogram; chọn $k \in [4, 8]$ có Silhouette cao nhất trong các $k$ mà cụm nhỏ nhất ≥ 15 tin.
+- Trực quan hóa Dendrogram; $k \in [4, 8]$; cụm < 15 tin coi là nhiễu (nhãn -1); $k$ hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn $k$ có Silhouette cao nhất (DECISIONS 04/10). Purity tính trên tin không phải nhiễu.
 
 #### Đánh giá độ tinh khiết phân cụm (Cluster Purity):
 Để kiểm chứng xem các cụm kỹ năng tự nhiên có tương ứng với các chức danh thực tế trên thị trường hay không, so sánh nhãn cụm $C = \{c_1, c_2, \dots, c_k\}$ với nhãn danh mục thực tế của ITviec $T = \{t_1, t_2, \dots, t_J\}$:

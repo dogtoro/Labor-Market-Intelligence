@@ -4,7 +4,7 @@
     "crawl_date": "2026-09-29",
     "n_jobs_with_skills": 677,
     "n_skills_in_matrix": 100,
-    "n_jobs_clustered": 548,
+    "n_jobs_clustered": 540,
     "n_jobs_with_salary": 172,
     "pct_with_salary": 25.0,
     "posted_from": "2026-08-10",
@@ -14,8 +14,8 @@
   "eda": {
     "top10_skills_pct": {
       "english": 54.7,
-      "communication": 41.7,
-      "api": 36.0,
+      "api": 45.2,
+      "communication": 42.0,
       "cicd": 31.4,
       "git": 28.6,
       "sql": 28.5,
@@ -41,7 +41,7 @@
     "n_train": 473,
     "n_test": 204,
     "min_support": 0.1,
-    "n_rules": 35,
+    "n_rules": 43,
     "top_rules_hold_on_test": "9/10",
     "top_rules": [
       {
@@ -67,10 +67,10 @@
       },
       {
         "rule": "microservices → kubernetes",
-        "train_conf": 0.608,
-        "train_lift": 2.994,
-        "test_conf": 0.441,
-        "test_lift": 1.915
+        "train_conf": 0.585,
+        "train_lift": 2.884,
+        "test_conf": 0.4,
+        "test_lift": 1.736
       },
       {
         "rule": "azure → aws",
@@ -82,22 +82,25 @@
     ]
   },
   "q2_clustering": {
-    "k": 4,
+    "k_cut": 8,
+    "n_real_clusters": 5,
+    "n_noise_jobs": 21,
     "cluster_sizes": {
-      "1": 43,
-      "2": 29,
-      "3": 76,
-      "4": 400
+      "1": 309,
+      "2": 85,
+      "3": 73,
+      "4": 26,
+      "5": 26
     },
-    "silhouette": 0.048,
-    "purity": 0.334,
-    "baseline_purity": 0.208,
-    "f_measure": 0.323,
-    "pct_jobs_in_largest_cluster": 73.0
+    "silhouette": 0.066,
+    "purity": 0.322,
+    "baseline_purity": 0.214,
+    "f_measure": 0.343,
+    "pct_jobs_in_largest_cluster": 59.5
   },
   "q3_tree": {
     "n_jobs": 172,
-    "n_features": 80,
+    "n_features": 81,
     "class_counts": {
       "Low": 60,
       "Mid": 55,
@@ -107,27 +110,37 @@
       32.2,
       50.0
     ],
-    "accuracy": 0.529,
+    "accuracy": 0.517,
     "accuracy_ci95": [
-      0.453,
-      0.605
+      0.442,
+      0.593
     ],
     "baseline": 0.349,
-    "macro_f1": 0.506,
+    "macro_f1": 0.52,
     "recall_by_class": {
-      "Low": 0.717,
-      "Mid": 0.236,
-      "High": 0.614
+      "Low": 0.5,
+      "Mid": 0.473,
+      "High": 0.579
     },
     "final_params": {
-      "max_depth": 3,
+      "max_depth": 6,
       "min_samples_leaf": 5
     },
     "feature_importance": {
-      "lvl_Intern/Junior": 0.455,
-      "lvl_Middle": 0.224,
-      "lvl_Unknown": 0.202,
-      "cpp": 0.119
+      "lvl_Intern/Junior": 0.237,
+      "lvl_Middle": 0.117,
+      "lvl_Unknown": 0.105,
+      "lvl_Senior": 0.077,
+      "loc_hn": 0.065,
+      "docker": 0.064,
+      "go": 0.062,
+      "react": 0.057,
+      "kubernetes": 0.057,
+      "api": 0.055,
+      "git": 0.054,
+      "communication": 0.021,
+      "aws": 0.021,
+      "redis": 0.009
     }
   },
   "bias": {

@@ -133,9 +133,9 @@ Sitemap: https://itviec.com/dunggiatminh.xml
 | File | SHA-256 (prefix) | Ghi chú |
 |------|-------------------|---------|
 | `data/processed/jobs_clean.parquet` | `4663b588…` | 688 dòng — freeze tối 01/10 (Mốc 2) |
-| `data/processed/skill_matrix.parquet` | `f87bb4a2…` | 677 dòng × 100 kỹ năng (sinh lại 03/10) |
-| `data/processed/rules_train.csv` | `10f87bbb…` | Luật Apriori (03/10) |
-| `data/processed/cluster_labels.csv` | `93644102…` | Thêm khi merge branch `zang` (03/10) |
+| `data/processed/skill_matrix.parquet` | `26f6716e…` | 677 dòng × 100 kỹ năng (sinh lại 04/10 sau khi thêm alias số nhiều) |
+| `data/processed/rules_train.csv` | `ad34d36e…` | Luật Apriori (04/10) |
+| `data/processed/cluster_labels.csv` | `044fe534…` | Nhãn cụm, `-1` = nhiễu (04/10) |
 
 - Dữ liệu freeze từ tối 01/10 (`docs/DECISIONS.md` Mốc 2).
 - Schema không được thay đổi sau freeze (`CLAUDE.md` mục 4, `docs/DATA_CONTRACT.md`).

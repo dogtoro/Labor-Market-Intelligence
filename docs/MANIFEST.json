@@ -2,8 +2,8 @@
   "files": [
     {
       "filename": "cluster_labels.csv",
-      "sha256": "9364410251e470a3e96e33bda6b543e670768f682b7adfc1dc1b32137a20d112",
-      "size_bytes": 34766
+      "sha256": "044fe534e4db1c9a865acb7e680adecefca9d6783a04569db7fce2bffa6bb55d",
+      "size_bytes": 34310
     },
     {
       "filename": "jobs_clean.parquet",
@@ -13,15 +13,15 @@
     },
     {
       "filename": "rules_train.csv",
-      "sha256": "10f87bbb9d77c5b44725fcbd21352479dba71be1863fc16c4f2fcb32e5541ae5",
-      "size_bytes": 8354
+      "sha256": "ad34d36ed0f73ded7292c2af7e856d4b038475c42bba07483cb2360699b135e4",
+      "size_bytes": 10252
     },
     {
       "filename": "skill_matrix.parquet",
-      "sha256": "f87bb4a23b628d756e4cb823b6c43816d84f14d1ff64c4166d992ff3e975c893",
-      "size_bytes": 81881,
+      "sha256": "26f6716e24ceb3fd0e1f79aab9ca00b97325ae674ca613779fe0d2c0053b121c",
+      "size_bytes": 81956,
       "row_count": 677
     }
   ],
-  "combined_sha256": "d6c0318021e1249b941e5f0153d72c9a6f1e064c11646cb71eb7c7d7565cfebc"
+  "combined_sha256": "2e3c65c82e9df934ef872f2eaf9702acdf9874099fc57fc92b45ebd160764096"
 }

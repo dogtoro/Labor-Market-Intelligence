@@ -186,3 +186,13 @@ class TestRealDictionaryAliases:
         assert extract_skills("UIKit, SwiftUI, Combine", real_patterns)["swift"] == 1
         # SWIFT (chuẩn ngân hàng) không phải ngôn ngữ Swift
         assert extract_skills("banking protocols (ISO 8583, SWIFT)", real_patterns)["swift"] == 0
+
+    def test_plural_and_singular_aliases(self, real_patterns):
+        """Dạng số nhiều/số ít (04/10): 'APIs' trước đây không khớp 'API' → sót 63 tin."""
+        assert extract_skills("Build REST APIs and integrate systems", real_patterns)["api"] == 1
+        assert extract_skills("knowledge of SQL, APIs, system integration", real_patterns)["api"] == 1
+        assert extract_skills("Design data pipelines for ML", real_patterns)["data_pipeline"] == 1
+        assert extract_skills("microservice architecture, REST, gRPC", real_patterns)["microservices"] == 1
+        assert extract_skills("RAG pipelines, vector databases", real_patterns)["vector_db"] == 1
+        # không bắt nhầm sang từ khác
+        assert extract_skills("rapid prototyping", real_patterns)["api"] == 0

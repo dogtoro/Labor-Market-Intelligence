@@ -148,7 +148,7 @@ def plot_pipeline_funnel(jobs, skills):
         ("HTML crawled", len(jobs)),
         ("Parsed + cleaned", len(jobs)),
         ("≥1 skill extracted", int((skills.sum(axis=1) > 0).sum())),
-        ("Used for clustering", len(pd.read_csv(clustered)) if clustered.exists() else 0),
+        ("Used for clustering (incl. noise)", len(pd.read_csv(clustered)) if clustered.exists() else 0),
         ("Salary disclosed", int(jobs["has_salary"].sum())),
     ]
     fig, ax = _new_fig()

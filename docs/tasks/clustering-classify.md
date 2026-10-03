@@ -31,7 +31,7 @@ Nhóm tin tuyển dụng theo kỹ năng (hierarchical clustering), đánh giá 
 | Decision tree + bias analysis | Chiều 02/10 → sáng 03/10 — **xong 03/10, merge 04/10** |
 
 ## Definition of Done
-- [x] Dendrogram rõ ràng, thử ≥3 giá trị k, chọn k có lý do (k = 4–8, chọn theo silhouette + cụm nhỏ nhất ≥ 15)
+- [x] Dendrogram rõ ràng, thử ≥3 giá trị k, chọn k có lý do (k = 4–8, chọn theo silhouette; cụm < 15 tin = nhiễu — DECISIONS 04/10)
 - [x] Purity tính đúng công thức bài giảng (bảng gộp nhóm nghề A16 đã review 04/10)
 - [x] `purity_report.md` có bảng cluster × category + nhận xét
 - [x] k-fold CV (k≥5), max_depth + min_samples_leaf tuned (nested CV 5×3)

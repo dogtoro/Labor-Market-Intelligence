@@ -1,7 +1,7 @@
 {
   "sklearn_version": "1.9.1",
   "params": {
-    "max_depth": 3,
+    "max_depth": 6,
     "min_samples_leaf": 5,
     "criterion": "gini"
   },
@@ -31,6 +31,7 @@
     "csharp",
     "data_governance",
     "data_modeling",
+    "data_pipeline",
     "data_warehouse",
     "dbt",
     "django",
