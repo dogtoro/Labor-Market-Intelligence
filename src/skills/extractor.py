@@ -38,9 +38,8 @@ def _build_patterns(skill_dict: dict[str, list[str]]) -> dict[str, re.Pattern]:
     for skill, aliases in skill_dict.items():
         # Escape special regex characters, join with |
         escaped = [re.escape(a) for a in aliases]
-        # Use word boundary for most; for short aliases (≤2 chars), require surrounding space/punctuation
         pat = "|".join(escaped)
-        patterns[skill] = re.compile(rf"(?:^|(?<=[\s,;()/]))(?:{pat})(?=[\s,;()/.]|$)", re.IGNORECASE)
+        patterns[skill] = re.compile(rf"(?<![\w+#.])(?:{pat})(?![\w+#])", re.IGNORECASE)
     return patterns
 
 

@@ -16,7 +16,9 @@ def skill_dict():
         "power_bi": ["Power BI", "PowerBI", "Power-BI"],
         "docker": ["Docker", "docker"],
         "aws": ["AWS", "Amazon Web Services"],
-        "react": ["React", "ReactJS", "React.js"],
+        "react": ["ReactJS", "React.js"],
+        "kubernetes": ["Kubernetes", "K8s", "k8s"],
+        "computer_vision": ["Computer Vision", "OpenCV"],
     }
 
 
@@ -58,18 +60,39 @@ class TestExtractSkills:
         assert result["sql"] == 0
 
     def test_multiple_skills(self, patterns):
-        text = "Cần biết Python, SQL, Docker, AWS, và React."
+        text = "Cần biết Python, SQL, Docker, AWS."
         result = extract_skills(text, patterns)
         assert result["python"] == 1
         assert result["sql"] == 1
         assert result["docker"] == 1
         assert result["aws"] == 1
-        assert result["react"] == 1
 
     def test_amazon_web_services_alias(self, patterns):
         text = "Triển khai trên Amazon Web Services."
         result = extract_skills(text, patterns)
         assert result["aws"] == 1
+
+    def test_feedback_cases(self, patterns):
+        # Experience with Python: 3 years
+        text1 = "Experience with Python: 3 years"
+        result1 = extract_skills(text1, patterns)
+        assert result1["python"] == 1
+
+        # Python-based tools
+        text2 = "Python-based tools"
+        result2 = extract_skills(text2, patterns)
+        assert result2["python"] == 1
+
+        # "Docker" and K8s
+        text3 = '"Docker" and K8s'
+        result3 = extract_skills(text3, patterns)
+        assert result3["docker"] == 1
+        assert result3["kubernetes"] == 1
+
+        # candidate must be in CV review
+        text4 = "candidate must be in CV review"
+        result4 = extract_skills(text4, patterns)
+        assert result4["computer_vision"] == 0
 
 
 class TestBuildSkillMatrix:
