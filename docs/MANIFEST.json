@@ -13,10 +13,10 @@
     },
     {
       "filename": "skill_matrix.parquet",
-      "sha256": "8e2e0d2f87e278bf3853eb5c799fbb35eb2d2c98ad2fc4c19780cbf7c06a6ad5",
-      "size_bytes": 81331,
+      "sha256": "f87bb4a23b628d756e4cb823b6c43816d84f14d1ff64c4166d992ff3e975c893",
+      "size_bytes": 81881,
       "row_count": 677
     }
   ],
-  "combined_sha256": "2a1d4a20cc919416994ae05f426f47701631bff91f7734a24b8cd417efea60a4"
+  "combined_sha256": "805f9931b0dc52c9c097a48650c297b2827f51b627321248797e026f8eb3e52d"
 }

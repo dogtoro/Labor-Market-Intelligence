@@ -33,9 +33,23 @@ SEED = 42
 TARGET = 0.80
 
 
-def load_sample(path: Path = CLEAN_PATH) -> pd.DataFrame:
+def load_sample(seed: int = SEED, path: Path = CLEAN_PATH) -> pd.DataFrame:
+    """20 JD ngẫu nhiên. Seed khác SEED → loại các JD đã có trong mẫu gốc (bộ kiểm tra độc lập)."""
     df = pd.read_parquet(path)
-    return df.sample(SAMPLE_SIZE, random_state=SEED).reset_index(drop=True)
+    if seed != SEED:
+        base_ids = set(df.sample(SAMPLE_SIZE, random_state=SEED)["job_id"])
+        df = df[~df["job_id"].isin(base_ids)]
+    return df.sample(SAMPLE_SIZE, random_state=seed).reset_index(drop=True)
+
+
+def paths_for_seed(seed: int) -> tuple[Path, Path]:
+    """(file nhãn, file báo cáo) theo seed; seed gốc giữ tên file cũ."""
+    if seed == SEED:
+        return LABELS_PATH, OUT_PATH
+    return (
+        PROJECT_ROOT / "reports" / f"a7_manual_labels_seed{seed}.csv",
+        PROJECT_ROOT / "reports" / f"A7_evaluation_seed{seed}.md",
+    )
 
 
 def _split_skills(value) -> set[str]:
@@ -117,16 +131,18 @@ def show_jd(sample: pd.DataFrame, n: int) -> None:
     print(f"[{n}] {row['title']} — {row['company']}\n{'-' * 60}\n{row['jd_text']}")
 
 
-def write_report(labels: pd.DataFrame, path: Path = OUT_PATH) -> float:
+def write_report(labels: pd.DataFrame, path: Path = OUT_PATH, seed: int = SEED,
+                 labels_path: Path = LABELS_PATH, note: str = "") -> float:
     per_job, overall, missed_counter = compute_coverage(labels)
     labelled = per_job["n_manual"] > 0
 
     lines = [
         "# A7 Evaluation — Độ phủ từ điển kỹ năng trên 20 JD ngẫu nhiên",
         "",
-        f"Sinh bởi `scripts/verify_a7.py` (mẫu {SAMPLE_SIZE} JD, seed={SEED}). "
-        "Nhãn tay ở `reports/a7_manual_labels.csv`.",
+        f"Sinh bởi `scripts/verify_a7.py` (mẫu {SAMPLE_SIZE} JD, seed={seed}). "
+        f"Nhãn tay ở `reports/{labels_path.name}`.",
         "",
+        *([note, ""] if note else []),
         f"- JD đã gán nhãn: **{int(labelled.sum())}/{len(labels)}**",
         f"- Tổng kỹ năng thực tế (nhãn tay): **{int(per_job['n_manual'].sum())}**",
         f"- Extractor bắt đúng: **{int(per_job['n_hit'].sum())}**",
@@ -170,18 +186,25 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--template", action="store_true", help="tạo file nhãn tay")
     group.add_argument("--show", type=int, metavar="N", help="in JD thứ N ra terminal")
+    parser.add_argument("--seed", type=int, default=SEED,
+                        help=f"seed lấy mẫu (mặc định {SEED}); seed khác = bộ kiểm tra độc lập, không trùng mẫu gốc")
     args = parser.parse_args()
+    labels_path, out_path = paths_for_seed(args.seed)
 
     if args.template:
-        write_template(load_sample())
+        write_template(load_sample(args.seed), path=labels_path)
     elif args.show is not None:
-        show_jd(load_sample(), args.show)
+        show_jd(load_sample(args.seed), args.show)
     else:
-        if not LABELS_PATH.exists():
-            sys.exit(f"Chưa có {LABELS_PATH}. Chạy --template rồi điền nhãn tay trước.")
-        labels = refresh_extracted(pd.read_csv(LABELS_PATH, encoding="utf-8"), load_sample())
-        labels.to_csv(LABELS_PATH, index=False, encoding="utf-8")
-        write_report(labels)
+        if not labels_path.exists():
+            sys.exit(f"Chưa có {labels_path}. Chạy --template rồi điền nhãn tay trước.")
+        labels = refresh_extracted(pd.read_csv(labels_path, encoding="utf-8"), load_sample(args.seed))
+        labels.to_csv(labels_path, index=False, encoding="utf-8")
+        note = "" if args.seed == SEED else (
+            "> **Bộ kiểm tra độc lập:** 20 JD không trùng mẫu seed=42; từ điển **không** được chỉnh "
+            "theo bộ này, nên con số ở đây không bị thiên lệch do chọn alias."
+        )
+        write_report(labels, path=out_path, seed=args.seed, labels_path=labels_path, note=note)
 
 
 if __name__ == "__main__":

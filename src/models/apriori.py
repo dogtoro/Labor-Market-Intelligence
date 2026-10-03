@@ -273,7 +273,7 @@ def main():
     data_rules, data_ms, data_counts = mine_data_rules(train_df, min_lift=1.2, min_confidence=0.5)
 
     eval_lines.append("")
-    eval_lines.append("## Top luật có kỹ năng data")
+    eval_lines.append("## Top luật có ít nhất 1 kỹ năng data")
     eval_lines.append(f"Kỹ năng data dùng để lọc: {', '.join(sorted(DATA_SKILLS))}.")
     eval_lines.append("")
     eval_lines.append("Số luật có kỹ năng data theo min_support (Train, lift > 1.2, confidence >= 0.5):")

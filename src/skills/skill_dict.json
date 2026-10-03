@@ -49,6 +49,10 @@
     "ruby": [
         "Ruby"
     ],
+    "swift": [
+        "Swift",
+        "SwiftUI"
+    ],
     "kotlin": [
         "Kotlin"
     ],

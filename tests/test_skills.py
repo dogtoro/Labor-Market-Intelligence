@@ -180,3 +180,9 @@ class TestRealDictionaryAliases:
     def test_soft_skill_aliases(self, real_patterns):
         assert extract_skills("a reliable team player", real_patterns)["teamwork"] == 1
         assert extract_skills("Able to communicate clearly", real_patterns)["communication"] == 1
+
+    def test_swift_case_sensitive(self, real_patterns):
+        assert extract_skills("iOS Native using Swift", real_patterns)["swift"] == 1
+        assert extract_skills("UIKit, SwiftUI, Combine", real_patterns)["swift"] == 1
+        # SWIFT (chuẩn ngân hàng) không phải ngôn ngữ Swift
+        assert extract_skills("banking protocols (ISO 8583, SWIFT)", real_patterns)["swift"] == 0

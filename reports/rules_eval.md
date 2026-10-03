@@ -35,7 +35,7 @@ Có 9/10 luật trong top 10 vẫn đạt cả lift > 1.2 và confidence >= 0.5 
 
 > **Hạn chế dữ liệu:** Dữ liệu thu thập là một snapshot các tin tuyển dụng còn active tính đến ngày 29/09. Do đó, việc chia Train/Test theo `posted_date` phản ánh sự khác biệt theo độ tuổi của tin (tin cũ vs tin mới đăng), chứ không hoàn toàn đo lường được sự thay đổi của thị trường theo thời gian dài.
 
-## Top luật có kỹ năng data
+## Top luật có ít nhất 1 kỹ năng data
 Kỹ năng data dùng để lọc: airflow, bigquery, data_lake, data_modeling, data_pipeline, data_warehouse, databricks, dbt, deep_learning, etl, hadoop, kafka, machine_learning, numpy, pandas, power_bi, python, redshift, snowflake, spark, sql, statistics, tableau.
 
 Số luật có kỹ năng data theo min_support (Train, lift > 1.2, confidence >= 0.5):

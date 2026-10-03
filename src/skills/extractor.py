@@ -35,6 +35,7 @@ CASE_SENSITIVE_ALIASES = {
     "React": "",
     "Spring": "",
     "Excel": "",
+    "Swift": "",  # SWIFT viết hoa toàn bộ là chuẩn ngân hàng, không phải ngôn ngữ iOS
     "Go": r"(?![- ](?:live|to)\b)",
 }
 
