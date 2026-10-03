@@ -138,7 +138,9 @@ def write_report(labels: pd.DataFrame, path: Path = OUT_PATH) -> float:
     ]
     if missed_counter:
         lines += ["| Kỹ năng | Số JD bị sót |", "|---|---|"]
-        lines += [f"| {skill} | {count} |" for skill, count in missed_counter.most_common(15)]
+        # Sắp theo (số lần giảm dần, tên) — most_common() để hoà theo thứ tự chèn từ set, đổi theo PYTHONHASHSEED
+        top_missed = sorted(missed_counter.items(), key=lambda kv: (-kv[1], kv[0]))[:15]
+        lines += [f"| {skill} | {count} |" for skill, count in top_missed]
     else:
         lines.append("Không có kỹ năng nào bị sót.")
 

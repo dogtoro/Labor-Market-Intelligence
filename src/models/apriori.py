@@ -44,8 +44,35 @@ def run_apriori(df: pd.DataFrame, min_supports: list[float] = [0.03, 0.04, 0.05,
                 break
 
     if not best_rules.empty:
+        best_rules = sort_rules(best_rules)
         best_rules['min_support_used'] = used_support
     return best_rules, results
+
+def format_itemset(itemset) -> str:
+    """Join skill names in sorted order — frozenset order changes with PYTHONHASHSEED."""
+    return ", ".join(sorted(itemset))
+
+def sort_rules(rules: pd.DataFrame) -> pd.DataFrame:
+    """Deterministic order: lift desc, confidence desc, then antecedents/consequents names.
+
+    A→B and B→A always share the same lift, so confidence and names are needed
+    as tie-breakers; otherwise the kept rule depends on frozenset iteration order.
+    Lift/confidence are rounded so float noise in the last bits cannot reorder ties.
+    """
+    if rules.empty:
+        return rules
+    keys = pd.DataFrame({
+        '_lift': rules['lift'].round(10),
+        '_conf': rules['confidence'].round(10),
+        '_ant': rules['antecedents'].map(format_itemset),
+        '_con': rules['consequents'].map(format_itemset),
+    }, index=rules.index)
+    order = keys.sort_values(
+        ['_lift', '_conf', '_ant', '_con'],
+        ascending=[False, False, True, True],
+        kind='mergesort',
+    ).index
+    return rules.loc[order].reset_index(drop=True)
 
 def evaluate_rules_on_test(top_rules: pd.DataFrame, test_df: pd.DataFrame) -> dict:
     test_bool = test_df.astype(bool)
@@ -88,8 +115,8 @@ DATA_SKILLS = {
 }
 
 def dedup_by_itemset(rules: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
-    """Sort by lift and keep only the best rule for each antecedents ∪ consequents itemset."""
-    sorted_rules = rules.sort_values('lift', ascending=False)
+    """Keep only the best rule (see sort_rules) for each antecedents ∪ consequents itemset."""
+    sorted_rules = sort_rules(rules)
     kept = []
     seen = set()
     for idx, row in sorted_rules.iterrows():
@@ -128,7 +155,7 @@ def mine_data_rules(
     by_supp = {}
     for ms in min_supports:
         rules, _ = run_apriori(train_df, min_supports=[ms], min_lift=min_lift, min_confidence=min_confidence)
-        data = filter_rules_with_skills(rules, skills)
+        data = sort_rules(filter_rules_with_skills(rules, skills))
         counts[ms] = len(data)
         by_supp[ms] = data
         if len(data) >= min_rules:
@@ -139,8 +166,12 @@ def mine_data_rules(
     best_ms = max(counts, key=counts.get)
     return by_supp[best_ms], best_ms, counts
 
-def format_itemset(frozen_set):
-    return ", ".join(list(frozen_set))
+def chronological_split(df: pd.DataFrame, train_frac: float = 0.7):
+    """Split by posted_date (old → train). Stable sort with job_id as secondary key,
+    so jobs sharing the boundary date always land on the same side."""
+    ordered = df.sort_values(['posted_date', 'job_id'], kind='mergesort')
+    split_idx = int(len(ordered) * train_frac)
+    return ordered.iloc[:split_idx], ordered.iloc[split_idx:]
 
 def main():
     print("Loading data...")
@@ -149,16 +180,15 @@ def main():
     
     df = pd.merge(skills_df, jobs_df[['job_id', 'posted_date']], on='job_id', how='inner')
     df['posted_date'] = pd.to_datetime(df['posted_date'])
-    df = df.sort_values('posted_date')
-    
+
     feature_cols = [c for c in df.columns if c not in ('job_id', 'posted_date')]
     if len(feature_cols) == 0:
         print("No skills available to run Apriori.")
         return
-        
-    split_idx = int(len(df) * 0.7)
-    train_df = df.iloc[:split_idx][feature_cols]
-    test_df = df.iloc[split_idx:][feature_cols]
+
+    train_part, test_part = chronological_split(df, train_frac=0.7)
+    train_df = train_part[feature_cols]
+    test_df = test_part[feature_cols]
     
     print(f"Train size: {len(train_df)}, Test size: {len(test_df)}")
     
@@ -211,10 +241,8 @@ def main():
         test_lift_above_1_2 = 0
         
         for idx, row in top_rules.iterrows():
-            ant = list(row['antecedents'])
-            con = list(row['consequents'])
-            ant_str = ", ".join(ant)
-            con_str = ", ".join(con)
+            ant_str = format_itemset(row['antecedents'])
+            con_str = format_itemset(row['consequents'])
             
             res = test_results[idx]
             test_supp = res['test_support']
@@ -266,8 +294,8 @@ def main():
 
         data_pass = 0
         for idx, row in top_data.iterrows():
-            ant_str = ", ".join(list(row['antecedents']))
-            con_str = ", ".join(list(row['consequents']))
+            ant_str = format_itemset(row['antecedents'])
+            con_str = format_itemset(row['consequents'])
             res = data_test_results[idx]
             if res['test_lift'] > 1.2 and res['test_confidence'] >= 0.5:
                 data_pass += 1

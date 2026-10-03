@@ -71,6 +71,7 @@ def test_dedup_by_itemset_keeps_best_permutation():
         'antecedents': [frozenset({'git', 'docker'}), frozenset({'git', 'cicd'}), frozenset({'aws'})],
         'consequents': [frozenset({'cicd'}), frozenset({'docker'}), frozenset({'gcp'})],
         'lift': [2.5, 2.4, 3.0],
+        'confidence': [0.8, 0.6, 0.7],
     })
     top = dedup_by_itemset(rules, top_n=10)
 
@@ -109,3 +110,70 @@ def test_mine_data_rules_empty_when_no_data_skill():
 
     assert rules.empty
     assert used_ms is None
+
+
+def test_dedup_symmetric_rules_keeps_higher_confidence():
+    from src.models.apriori import dedup_by_itemset
+
+    # A→B và B→A luôn cùng lift; phải chọn theo confidence, không theo thứ tự frozenset
+    rules = pd.DataFrame({
+        'antecedents': [frozenset({'cicd'}), frozenset({'git'})],
+        'consequents': [frozenset({'git'}), frozenset({'cicd'})],
+        'lift': [2.2, 2.2],
+        'confidence': [0.600, 0.698],
+    })
+    top = dedup_by_itemset(rules)
+
+    assert len(top) == 1
+    assert top.iloc[0]['antecedents'] == frozenset({'git'})
+
+
+def test_format_itemset_is_sorted():
+    from src.models.apriori import format_itemset
+
+    assert format_itemset(frozenset({'git', 'aws', 'cicd'})) == "aws, cicd, git"
+
+
+def test_chronological_split_stable_on_ties():
+    from src.models.apriori import chronological_split
+
+    df = pd.DataFrame({
+        'job_id': ['d', 'b', 'c', 'a'],
+        'posted_date': pd.to_datetime(['2026-09-01', '2026-09-02', '2026-09-02', '2026-09-02']),
+    })
+    train, test = chronological_split(df, train_frac=0.5)
+
+    # Cùng ngày 02/09 → thứ tự theo job_id: a, b, c
+    assert list(train['job_id']) == ['d', 'a']
+    assert list(test['job_id']) == ['b', 'c']
+    # Đảo thứ tự dòng đầu vào không đổi kết quả
+    train2, _ = chronological_split(df.iloc[::-1], train_frac=0.5)
+    assert list(train2['job_id']) == ['d', 'a']
+
+
+def test_rules_identical_across_hash_seeds():
+    """Cùng dữ liệu, PYTHONHASHSEED khác nhau → luật và thứ tự phải giống hệt."""
+    import os
+    import subprocess
+    import sys
+
+    code = (
+        "import numpy as np, pandas as pd\n"
+        "from src.models.apriori import run_apriori, dedup_by_itemset, format_itemset\n"
+        "rng = np.random.default_rng(7)\n"
+        "cols = ['python', 'sql', 'git', 'cicd', 'aws', 'docker', 'kubernetes', 'api']\n"
+        "base = rng.random((300, 1)) < 0.5\n"
+        "df = pd.DataFrame((rng.random((300, 8)) < 0.3) | base, columns=cols).astype(int)\n"
+        "rules, _ = run_apriori(df, min_supports=[0.2], min_lift=1.0, min_confidence=0.3)\n"
+        "top = dedup_by_itemset(rules, top_n=10)\n"
+        "for r in top.itertuples():\n"
+        "    print(format_itemset(r.antecedents), '->', format_itemset(r.consequents), round(r.lift, 6))\n"
+    )
+    outputs = []
+    for seed in ('0', '1', '2', '3'):
+        env = {**os.environ, 'PYTHONHASHSEED': seed}
+        res = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=env, check=True)
+        outputs.append(res.stdout)
+
+    assert outputs[0].strip()
+    assert all(o == outputs[0] for o in outputs)

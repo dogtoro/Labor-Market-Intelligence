@@ -41,3 +41,21 @@ def test_compute_coverage_normalises_case_and_spaces():
 
     assert overall == 1.0
     assert not missed
+
+
+def test_report_missed_table_order_is_deterministic(tmp_path):
+    from scripts.verify_a7 import write_report
+
+    labels = pd.DataFrame({
+        "idx": [0, 1],
+        "title": ["A", "B"],
+        "company": ["X", "Y"],
+        "skills_extracted": ["", ""],
+        "skills_manual": ["zeta; alpha; mid", "mid"],
+    })
+    out = tmp_path / "a7.md"
+    write_report(labels, path=out)
+    text = out.read_text(encoding="utf-8")
+
+    # mid (2 lần) trước, sau đó alpha, zeta theo tên
+    assert text.index("| mid | 2 |") < text.index("| alpha | 1 |") < text.index("| zeta | 1 |")

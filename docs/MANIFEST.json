@@ -8,8 +8,8 @@
     },
     {
       "filename": "rules_train.csv",
-      "sha256": "9615dc499aa27cb30b34fa44d66eed7d0e4e7358f39f7c0b99ac6e64556e5c7f",
-      "size_bytes": 8052
+      "sha256": "10f87bbb9d77c5b44725fcbd21352479dba71be1863fc16c4f2fcb32e5541ae5",
+      "size_bytes": 8354
     },
     {
       "filename": "skill_matrix.parquet",
@@ -18,5 +18,5 @@
       "row_count": 677
     }
   ],
-  "combined_sha256": "59e82daf407e3b93dee548b14a4618f579e72cdc110f2eeb3a0add774834c271"
+  "combined_sha256": "2a1d4a20cc919416994ae05f426f47701631bff91f7734a24b8cd417efea60a4"
 }

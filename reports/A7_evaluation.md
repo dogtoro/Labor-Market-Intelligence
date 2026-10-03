@@ -13,19 +13,19 @@ Sinh bởi `scripts/verify_a7.py` (mẫu 20 JD, seed=42). Nhãn tay ở `reports
 |---|---|
 | communication | 5 |
 | teamwork | 2 |
-| jetpack_compose | 1 |
-| rxjava | 1 |
+| airbyte | 1 |
 | android_sdk | 1 |
-| junit | 1 |
-| firebase | 1 |
-| sqlite | 1 |
-| retrofit | 1 |
-| realm | 1 |
-| github_actions | 1 |
 | backstage | 1 |
-| microsoft_fabric | 1 |
-| iceberg | 1 |
-| open_policy_agent | 1 |
+| c | 1 |
+| cicd | 1 |
+| circleci | 1 |
+| clickup | 1 |
+| cypress | 1 |
+| firebase | 1 |
+| french | 1 |
+| github_actions | 1 |
+| gitlab_ci | 1 |
+| haproxy | 1 |
 
 ## Chi tiết từng JD
 

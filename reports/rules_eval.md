@@ -8,27 +8,27 @@
 - `min_confidence` = 0.5: Đảm bảo độ tin cậy của luật cao (ít nhất 50% khả năng kéo theo).
 - `min_lift` = 1.2: Lọc các luật có tương quan tích cực rõ rệt.
 Kết quả chạy Apriori trên các mức min_support khác nhau (Train):
-- min_support = 0.03: tìm được 2589 luật
-- min_support = 0.04: tìm được 1093 luật
-- min_support = 0.05: tìm được 482 luật
-- min_support = 0.06: tìm được 198 luật
-- min_support = 0.1: tìm được 34 luật
+- min_support = 0.03: tìm được 2608 luật
+- min_support = 0.04: tìm được 1098 luật
+- min_support = 0.05: tìm được 477 luật
+- min_support = 0.06: tìm được 197 luật
+- min_support = 0.1: tìm được 35 luật
 
-=> Chọn `min_support` = 0.1 vì số lượng luật tìm được (34) nằm trong khoảng vừa phải (không quá ít để phân tích, không quá nhiều dẫn đến nhiễu).
+=> Chọn `min_support` = 0.1 vì số lượng luật tìm được (35) nằm trong khoảng vừa phải (không quá ít để phân tích, không quá nhiều dẫn đến nhiễu).
 
 ## Top 10 luật kết hợp (theo Lift, mỗi tập kỹ năng chỉ giữ 1 luật)
 | Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |
 |-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|
-| kubernetes | docker | 0.133 | 0.649 | 3.135 | 0.167 | 0.739 | 2.513 |
-| microservices | kubernetes | 0.101 | 0.615 | 3.001 | 0.074 | 0.429 | 1.901 |
-| gcp | aws | 0.121 | 0.814 | 2.986 | 0.147 | 0.938 | 3.135 |
-| azure | aws | 0.129 | 0.744 | 2.728 | 0.137 | 0.778 | 2.601 |
-| aws, git | cicd | 0.104 | 0.790 | 2.492 | 0.132 | 0.964 | 2.981 |
-| docker | cicd | 0.152 | 0.735 | 2.317 | 0.196 | 0.667 | 2.061 |
-| api, git | cicd | 0.106 | 0.704 | 2.221 | 0.142 | 0.674 | 2.085 |
-| cicd | git | 0.190 | 0.600 | 2.200 | 0.225 | 0.697 | 2.091 |
-| docker | git | 0.121 | 0.582 | 2.133 | 0.201 | 0.683 | 2.050 |
-| kubernetes | aws | 0.118 | 0.577 | 2.117 | 0.142 | 0.630 | 2.108 |
+| spring | java | 0.101 | 1.000 | 4.683 | 0.083 | 1.000 | 4.000 |
+| kubernetes | docker | 0.133 | 0.656 | 3.200 | 0.167 | 0.723 | 2.419 |
+| gcp | aws | 0.118 | 0.812 | 2.999 | 0.152 | 0.939 | 3.091 |
+| microservices | kubernetes | 0.101 | 0.608 | 2.994 | 0.074 | 0.441 | 1.915 |
+| azure | aws | 0.129 | 0.744 | 2.749 | 0.137 | 0.778 | 2.559 |
+| aws, git | cicd | 0.101 | 0.787 | 2.498 | 0.137 | 0.966 | 2.940 |
+| docker | cicd | 0.152 | 0.742 | 2.356 | 0.196 | 0.656 | 1.997 |
+| api, git | cicd | 0.104 | 0.700 | 2.222 | 0.147 | 0.682 | 2.076 |
+| git | cicd | 0.188 | 0.690 | 2.190 | 0.230 | 0.691 | 2.104 |
+| kubernetes | aws | 0.116 | 0.573 | 2.117 | 0.147 | 0.638 | 2.100 |
 
 ## Nhận xét (Overfit / Rule drift)
 Có 9/10 luật trong top 10 vẫn đạt cả lift > 1.2 và confidence >= 0.5 trên tập Test.
@@ -42,21 +42,21 @@ Số luật có kỹ năng data theo min_support (Train, lift > 1.2, confidence 
 - min_support = 0.09: 2 luật
 - min_support = 0.08: 3 luật
 - min_support = 0.07: 7 luật
-- min_support = 0.06: 16 luật
+- min_support = 0.06: 17 luật
 
 => Chọn `min_support` = 0.06 (mức cao nhất cho ra ≥10 luật có kỹ năng data; nếu không có thì lấy mức nhiều luật nhất).
 
 | Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |
 |-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|
-| kafka | redis | 0.061 | 0.580 | 6.235 | 0.103 | 0.636 | 4.188 |
-| kafka | kubernetes | 0.074 | 0.700 | 3.413 | 0.064 | 0.394 | 1.747 |
-| mssql | sql | 0.072 | 0.944 | 3.285 | 0.069 | 0.875 | 2.975 |
-| sql, cicd | git | 0.068 | 0.711 | 2.607 | 0.059 | 0.706 | 2.118 |
-| python, git | cicd | 0.061 | 0.725 | 2.286 | 0.098 | 0.690 | 2.132 |
-| sql, cicd | api | 0.063 | 0.667 | 1.911 | 0.064 | 0.765 | 1.880 |
-| sql, git | api | 0.063 | 0.667 | 1.911 | 0.064 | 0.867 | 2.130 |
-| kafka | api | 0.068 | 0.640 | 1.835 | 0.113 | 0.697 | 1.713 |
-| sql, communication | api | 0.076 | 0.514 | 1.474 | 0.054 | 0.550 | 1.352 |
-| sql, english | communication | 0.108 | 0.637 | 1.443 | 0.069 | 0.467 | 1.221 |
+| redis | kafka | 0.061 | 0.674 | 6.380 | 0.103 | 0.656 | 4.057 |
+| kafka | kubernetes | 0.074 | 0.700 | 3.449 | 0.064 | 0.394 | 1.710 |
+| mssql | sql | 0.074 | 0.946 | 3.266 | 0.064 | 0.867 | 2.997 |
+| cicd, sql | git | 0.068 | 0.711 | 2.607 | 0.059 | 0.706 | 2.118 |
+| git, python | cicd | 0.061 | 0.725 | 2.302 | 0.098 | 0.690 | 2.100 |
+| git, sql | api | 0.066 | 0.674 | 1.956 | 0.059 | 0.857 | 2.057 |
+| cicd, sql | api | 0.063 | 0.667 | 1.935 | 0.064 | 0.765 | 1.835 |
+| mysql | sql | 0.061 | 0.547 | 1.889 | 0.039 | 0.242 | 0.838 |
+| kafka | api | 0.068 | 0.640 | 1.857 | 0.113 | 0.697 | 1.673 |
+| communication, sql | api | 0.078 | 0.521 | 1.512 | 0.049 | 0.526 | 1.263 |
 
 Có 8/10 luật data vẫn đạt cả lift > 1.2 và confidence >= 0.5 trên tập Test.
