@@ -4,7 +4,7 @@ run_pipeline.py — Điều phối pipeline từng bước.
 Usage:
     python scripts/run_pipeline.py <step>
 
-Steps: pilot, crawl, parse, clean, skills, rules, cluster, classify, figures, all, test, manifest
+Steps: pilot, crawl, parse, clean, skills, rules, cluster, classify, bias, figures, all, test, manifest
 """
 
 import subprocess
@@ -21,7 +21,8 @@ STEPS = {
     "skills": "Trích kỹ năng → data/processed/skill_matrix.parquet",
     "rules": "Chạy Apriori association rules",
     "cluster": "Chạy hierarchical clustering (Jaccard)",
-    "classify": "Chạy decision tree phân lớp lương (tùy chọn)",
+    "classify": "Chạy decision tree phân lớp lương",
+    "bias": "Phân tích thiên lệch tin có/không lương → reports/bias_analysis.md",
     "figures": "Xuất hình vẽ → reports/figures/",
     "all": "Chạy toàn bộ pipeline",
     "test": "Chạy pytest",
@@ -67,8 +68,20 @@ def run_step(step: str):
         subprocess.run([sys.executable, "-m", "src.models.apriori"], cwd=PROJECT_ROOT, check=True)
         return
 
+    if step == "cluster":
+        subprocess.run([sys.executable, "-m", "src.models.clustering"], cwd=PROJECT_ROOT, check=True)
+        return
+
+    if step == "classify":
+        subprocess.run([sys.executable, "-m", "src.models.classification"], cwd=PROJECT_ROOT, check=True)
+        return
+
+    if step == "bias":
+        subprocess.run([sys.executable, "-m", "src.models.bias_analysis"], cwd=PROJECT_ROOT, check=True)
+        return
+
     if step == "all":
-        for s in ["parse", "clean", "skills", "rules", "cluster", "figures", "manifest"]:
+        for s in ["parse", "clean", "skills", "rules", "cluster", "classify", "bias", "figures", "manifest"]:
             run_step(s)
         return
 

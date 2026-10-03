@@ -1,6 +1,11 @@
 {
   "files": [
     {
+      "filename": "cluster_labels.csv",
+      "sha256": "9364410251e470a3e96e33bda6b543e670768f682b7adfc1dc1b32137a20d112",
+      "size_bytes": 34766
+    },
+    {
       "filename": "jobs_clean.parquet",
       "sha256": "4663b5885742931868f6679744ac03c036f71d322af92579e3bdb690281d1e0f",
       "size_bytes": 1137077,
@@ -18,5 +23,5 @@
       "row_count": 677
     }
   ],
-  "combined_sha256": "805f9931b0dc52c9c097a48650c297b2827f51b627321248797e026f8eb3e52d"
+  "combined_sha256": "d6c0318021e1249b941e5f0153d72c9a6f1e064c11646cb71eb7c7d7565cfebc"
 }
