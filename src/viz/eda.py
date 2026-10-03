@@ -1,9 +1,10 @@
-"""Biểu đồ EDA dùng chung cho notebooks và bước `figures` của pipeline.
+"""Shared EDA charts for the notebooks and the pipeline's `figures` step.
 
-Mọi hình đọc dữ liệu đã freeze (kiểm SHA-256 với docs/MANIFEST.json), chỉ vẽ số liệu
-tổng hợp — không hiển thị nguyên văn JD (cam kết ToS, docs/DECISIONS.md 29/09).
+Every chart reads the frozen data (SHA-256 checked against docs/MANIFEST.json) and only
+plots aggregate numbers — never the raw job-description text (ToS commitment,
+docs/DECISIONS.md 29/09).
 
-Dùng:
+Usage:
     from src.viz.eda import load_data, FIGURES, save_figure
     jobs, skills = load_data()
     fig = FIGURES["top_skills"](jobs, skills)
@@ -20,7 +21,6 @@ import numpy as np
 import pandas as pd
 
 from src.models.clustering import map_expertise_groups
-from src.parse.salary import DEFAULT_USD_TO_VND
 from src.models.features import (
     LOCATION_COLUMNS,
     calculate_salary_mid,
@@ -28,16 +28,19 @@ from src.models.features import (
     extract_location_flags,
     load_and_verify_data,
 )
+from src.parse.salary import DEFAULT_USD_TO_VND
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 FIG_DIR = PROJECT_ROOT / "reports" / "figures"
 EXPERTISE_MAP_PATH = PROJECT_ROOT / "src" / "models" / "expertise_groups.json"
 
-SOURCE_NOTE = "Nguồn: ITviec, crawl 29/09/2026"
+SOURCE_NOTE = "Source: ITviec, crawled 29 Sep 2026"
 LEVEL_ORDER = ["Intern/Junior", "Middle", "Senior", "Lead", "Manager", "Unknown"]
-CITY_LABELS = {"loc_hcm": "TP.HCM", "loc_hn": "Hà Nội", "loc_dn": "Đà Nẵng", "loc_other": "Khác"}
+CITY_LABELS = {"loc_hcm": "Ho Chi Minh City", "loc_hn": "Hanoi", "loc_dn": "Da Nang", "loc_other": "Other"}
+# Display names for data values that are in Vietnamese (expertise_groups.json)
+GROUP_DISPLAY = {"Khác": "Other"}
 SALARY_CLASSES = ["Low", "Mid", "High"]
-TRAIN_FRAC = 0.7  # khớp src/models/apriori.py::chronological_split
+TRAIN_FRAC = 0.7  # matches src/models/apriori.py::chronological_split
 
 STYLE = {
     "font.size": 12,
@@ -55,17 +58,17 @@ COLOR_2 = "#dd6b20"
 
 
 # ---------------------------------------------------------------------------
-# Dữ liệu
+# Data
 # ---------------------------------------------------------------------------
 
 def load_data(data_dir: Path | None = None):
-    """Đọc jobs_clean + skill_matrix (đã kiểm hash) và thêm các cột dẫn xuất cho EDA.
+    """Load jobs_clean + skill_matrix (hash-checked) and add derived columns for EDA.
 
     Returns:
-        jobs: 688 tin, thêm salary_mid, has_salary, level_group, expertise_group,
-              loc_* (multi-hot), posted_date (datetime).
-        skills: ma trận nhị phân 688 × kỹ năng, index = job_id; tin không bắt được
-              kỹ năng nào (bị loại khỏi skill_matrix) điền 0.
+        jobs: all jobs, plus salary_mid, has_salary, level_group, expertise_group,
+              loc_* (multi-hot) and posted_date (datetime); index = job_id.
+        skills: binary jobs × skills matrix, index = job_id; jobs with no extracted
+              skill (dropped from skill_matrix) are filled with 0.
     """
     kwargs = {"data_dir": data_dir} if data_dir else {}
     jobs, skills = load_and_verify_data(**kwargs)
@@ -84,21 +87,25 @@ def load_data(data_dir: Path | None = None):
 
 
 def salary_tertiles(jobs: pd.DataFrame):
-    """Nhãn tertile Low/Mid/High cho tin có lương (DECISIONS Mốc 2) và 2 ranh giới (triệu VND)."""
+    """Low/Mid/High tertile labels for jobs with a salary (DECISIONS milestone 2) and the 2 cut-offs."""
     paid = jobs.loc[jobs["has_salary"], "salary_mid"]
     labels, bins = pd.qcut(paid, q=3, labels=SALARY_CLASSES, retbins=True)
     return labels.astype(str), (bins[1], bins[2])
 
 
 def skill_share(skills: pd.DataFrame) -> pd.Series:
-    """Tỷ lệ tin (trên toàn bộ 688 tin) có từng kỹ năng, giảm dần; hoà thì theo tên."""
+    """Share of all jobs requiring each skill, descending; ties broken by name."""
     share = skills.mean()
     order = sorted(share.index, key=lambda s: (-share[s], s))
     return share[order]
 
 
+def group_label(group: str) -> str:
+    return GROUP_DISPLAY.get(group, group)
+
+
 # ---------------------------------------------------------------------------
-# Tiện ích vẽ
+# Plot helpers
 # ---------------------------------------------------------------------------
 
 def _new_fig(figsize=(10, 6)):
@@ -131,40 +138,40 @@ def save_figure(fig, name: str, fig_dir: Path = FIG_DIR) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Biểu đồ
+# Charts
 # ---------------------------------------------------------------------------
 
 def plot_pipeline_funnel(jobs, skills):
-    """Số tin còn lại qua từng bước pipeline."""
+    """Number of jobs left after each pipeline step."""
     clustered = PROJECT_ROOT / "data" / "processed" / "cluster_labels.csv"
     steps = [
-        ("HTML crawl", len(jobs)),
-        ("Parse + làm sạch", len(jobs)),
-        ("Có ≥1 kỹ năng", int((skills.sum(axis=1) > 0).sum())),
-        ("Dùng để phân cụm", len(pd.read_csv(clustered)) if clustered.exists() else 0),
-        ("Có công bố lương", int(jobs["has_salary"].sum())),
+        ("HTML crawled", len(jobs)),
+        ("Parsed + cleaned", len(jobs)),
+        ("≥1 skill extracted", int((skills.sum(axis=1) > 0).sum())),
+        ("Used for clustering", len(pd.read_csv(clustered)) if clustered.exists() else 0),
+        ("Salary disclosed", int(jobs["has_salary"].sum())),
     ]
     fig, ax = _new_fig()
     names, values = zip(*steps)
     bars = ax.barh(names[::-1], values[::-1], color=COLOR)
     _label_bars(ax, bars, horizontal=True)
-    ax.set_xlabel("Số tin tuyển dụng")
-    ax.set_title("Phễu dữ liệu qua các bước pipeline")
+    ax.set_xlabel("Number of job postings")
+    ax.set_title("Data funnel through the pipeline")
     ax.set_xlim(0, max(values) * 1.12)
     return _finish(fig)
 
 
 def plot_salary_disclosure(jobs, skills):
     order = ["full_range", "one_sided", "undisclosed"]
-    names = {"full_range": "Có đủ khoảng lương", "one_sided": "Chỉ 1 cận", "undisclosed": "Không công bố"}
+    names = {"full_range": "Full range", "one_sided": "One bound only", "undisclosed": "Not disclosed"}
     counts = jobs["salary_status"].value_counts().reindex(order, fill_value=0)
     fig, ax = _new_fig((9, 6))
     bars = ax.bar([names[s] for s in order], counts.values, color=[COLOR, COLOR, "#a0aec0"])
     for bar, n in zip(bars, counts.values):
         ax.text(bar.get_x() + bar.get_width() / 2, n, f"{n} ({n / len(jobs):.0%})",
                 ha="center", va="bottom", fontsize=12)
-    ax.set_ylabel("Số tin")
-    ax.set_title("Tình trạng công bố lương (lương lấy từ JSON-LD baseSalary)")
+    ax.set_ylabel("Number of jobs")
+    ax.set_title("Salary disclosure (salary taken from JSON-LD baseSalary)")
     return _finish(fig)
 
 
@@ -174,16 +181,16 @@ def plot_salary_distribution(jobs, skills):
     fig, ax = _new_fig()
     ax.hist(paid, bins=np.arange(0, paid.max() + 10, 5), color=COLOR, edgecolor="white")
     top = ax.get_ylim()[1]
-    # nhãn ranh giới dưới đặt bên trái đường, ranh giới trên đặt bên phải → không chồng nhau
+    # lower cut-off label on the left of its line, upper on the right → no overlap
     for cut, label, ha in [(low, "Low | Mid", "right"), (high, "Mid | High", "left")]:
         ax.axvline(cut, color=COLOR_2, linestyle="--", linewidth=2)
         pad = " " if ha == "left" else ""
-        ax.text(cut, top * 0.97, f"{pad}{label} {pad}\n{pad}{cut:.1f} tr {pad}", color=COLOR_2,
+        ax.text(cut, top * 0.97, f"{pad}{label} {pad}\n{pad}{cut:.1f}M {pad}", color=COLOR_2,
                 va="top", ha=ha, fontsize=11)
-    ax.set_xlabel("Lương đại diện (triệu VND/tháng)")
-    ax.set_ylabel("Số tin")
-    ax.set_title(f"Phân phối lương — {len(paid)} tin có công bố (đường đứt: ranh giới tertile)")
-    return _finish(fig, SOURCE_NOTE + f"; tỷ giá {DEFAULT_USD_TO_VND:,} VND/USD; one_sided dùng cận duy nhất".replace(",", "."))
+    ax.set_xlabel("Representative salary (million VND / month)")
+    ax.set_ylabel("Number of jobs")
+    ax.set_title(f"Salary distribution — {len(paid)} jobs with a disclosed salary (dashed: tertile cut-offs)")
+    return _finish(fig, SOURCE_NOTE + f"; rate {DEFAULT_USD_TO_VND:,} VND/USD; one-bound salaries use that bound")
 
 
 def plot_currency(jobs, skills):
@@ -193,9 +200,9 @@ def plot_currency(jobs, skills):
     for bar, n in zip(bars, counts.values):
         ax.text(bar.get_x() + bar.get_width() / 2, n, f"{n} ({n / counts.sum():.0%})",
                 ha="center", va="bottom", fontsize=12)
-    ax.set_xlabel("Đơn vị tiền gốc")
-    ax.set_ylabel("Số tin có lương")
-    ax.set_title("Đơn vị tiền của lương được công bố")
+    ax.set_xlabel("Original currency")
+    ax.set_ylabel("Jobs with a disclosed salary")
+    ax.set_title("Currency of disclosed salaries")
     return _finish(fig)
 
 
@@ -204,10 +211,10 @@ def plot_top_skills(jobs, skills, n=20):
     fig, ax = _new_fig((10, 8))
     bars = ax.barh(share.index[::-1], share.values[::-1] * 100, color=COLOR)
     _label_bars(ax, bars, fmt="{:.0f}%", horizontal=True)
-    ax.set_xlabel("% số tin yêu cầu kỹ năng")
-    ax.set_title(f"Top {n} kỹ năng được yêu cầu nhiều nhất")
+    ax.set_xlabel("% of jobs requiring the skill")
+    ax.set_title(f"Top {n} most requested skills")
     ax.set_xlim(0, share.max() * 115)
-    return _finish(fig, SOURCE_NOTE + f"; {len(jobs)} tin; trích bằng từ điển kỹ năng (độ phủ: ASSUMPTIONS A7)")
+    return _finish(fig, SOURCE_NOTE + f"; {len(jobs)} jobs; dictionary-based extraction (coverage: ASSUMPTIONS A7)")
 
 
 def plot_locations(jobs, skills):
@@ -216,9 +223,9 @@ def plot_locations(jobs, skills):
     fig, ax = _new_fig((9, 6))
     bars = ax.bar(counts.index, counts.values, color=COLOR)
     _label_bars(ax, bars)
-    ax.set_ylabel("Số tin")
-    ax.set_title("Địa điểm làm việc")
-    return _finish(fig, SOURCE_NOTE + f"; 1 tin có thể ở nhiều nơi; {missing} tin không ghi địa điểm")
+    ax.set_ylabel("Number of jobs")
+    ax.set_title("Work location")
+    return _finish(fig, SOURCE_NOTE + f"; a job can list several cities; {missing} jobs have no location")
 
 
 def plot_levels(jobs, skills):
@@ -226,10 +233,10 @@ def plot_levels(jobs, skills):
     fig, ax = _new_fig()
     bars = ax.bar(counts.index, counts.values, color=[COLOR] * 5 + ["#a0aec0"])
     _label_bars(ax, bars)
-    ax.set_ylabel("Số tin")
-    ax.set_xlabel("Cấp bậc (suy từ tiêu đề tin)")
-    ax.set_title("Cấp bậc tuyển dụng")
-    return _finish(fig, SOURCE_NOTE + "; Unknown = tiêu đề không nêu cấp bậc (A17)")
+    ax.set_ylabel("Number of jobs")
+    ax.set_xlabel("Seniority (inferred from the job title)")
+    ax.set_title("Seniority levels")
+    return _finish(fig, SOURCE_NOTE + "; Unknown = title does not state a level (A17)")
 
 
 def plot_timeline(jobs, skills):
@@ -239,14 +246,14 @@ def plot_timeline(jobs, skills):
     fig, ax = _new_fig()
     ax.bar(weekly.index, weekly.values, width=5, color=COLOR)
     ax.axvline(split_date, color=COLOR_2, linestyle="--", linewidth=2)
-    ax.text(split_date, ax.get_ylim()[1] * 0.95, f" mốc 70% train / 30% test\n {split_date:%d/%m}",
+    ax.text(split_date, ax.get_ylim()[1] * 0.95, f" 70% train / 30% test split\n {split_date:%d %b}",
             color=COLOR_2, va="top", fontsize=11)
-    ax.set_xlabel("Tuần đăng tin (datePosted)")
-    ax.set_ylabel("Số tin")
-    ax.set_title("Thời điểm đăng của các tin còn tuyển ngày 29/09")
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m"))
+    ax.set_xlabel("Posting week (datePosted)")
+    ax.set_ylabel("Number of jobs")
+    ax.set_title("When the jobs still open on 29 Sep were posted")
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
     fig.autofmt_xdate()
-    return _finish(fig, SOURCE_NOTE + "; snapshot — tin cũ đã hết hạn không còn trên site")
+    return _finish(fig, SOURCE_NOTE + "; snapshot — expired older postings are no longer on the site")
 
 
 def _boxplot_by(jobs, column, order, title, xlabel):
@@ -256,14 +263,14 @@ def _boxplot_by(jobs, column, order, title, xlabel):
     fig, ax = _new_fig()
     ax.boxplot([s.values for _, s in groups])
     ax.set_xticks(range(1, len(groups) + 1), [f"{g}\n(n={len(s)})" for g, s in groups])
-    ax.set_ylabel("Lương đại diện (triệu VND/tháng)")
+    ax.set_ylabel("Representative salary (million VND / month)")
     ax.set_xlabel(xlabel)
     ax.set_title(title)
-    return _finish(fig, SOURCE_NOTE + "; chỉ tin có công bố lương")
+    return _finish(fig, SOURCE_NOTE + "; jobs with a disclosed salary only")
 
 
 def plot_salary_by_level(jobs, skills):
-    return _boxplot_by(jobs, "level_group", LEVEL_ORDER, "Lương theo cấp bậc", "Cấp bậc")
+    return _boxplot_by(jobs, "level_group", LEVEL_ORDER, "Salary by seniority", "Seniority")
 
 
 def plot_salary_by_location(jobs, skills):
@@ -276,9 +283,9 @@ def plot_salary_by_location(jobs, skills):
     fig, ax = _new_fig((9, 6))
     ax.boxplot([s.values for _, s in rows])
     ax.set_xticks(range(1, len(rows) + 1), [f"{n}\n(n={len(s)})" for n, s in rows])
-    ax.set_ylabel("Lương đại diện (triệu VND/tháng)")
-    ax.set_title("Lương theo địa điểm")
-    return _finish(fig, SOURCE_NOTE + "; chỉ tin có công bố lương; 1 tin có thể ở nhiều nơi")
+    ax.set_ylabel("Representative salary (million VND / month)")
+    ax.set_title("Salary by location")
+    return _finish(fig, SOURCE_NOTE + "; jobs with a disclosed salary only; a job can list several cities")
 
 
 def plot_expertise_groups(jobs, skills):
@@ -287,15 +294,16 @@ def plot_expertise_groups(jobs, skills):
     paid = jobs.loc[jobs["has_salary"], "expertise_group"].value_counts().reindex(order, fill_value=0)
     fig, ax = _new_fig((10, 7))
     y = np.arange(len(order))
-    ax.barh(y, total[order].values, color="#a0aec0", label="Tất cả tin")
-    ax.barh(y, paid.values, color=COLOR, label="Có công bố lương")
+    ax.barh(y, total[order].values, color="#a0aec0", label="All jobs")
+    ax.barh(y, paid.values, color=COLOR, label="Salary disclosed")
     for i, g in enumerate(order):
-        ax.text(total[g], i, f" {total[g]} ({paid[g] / total[g]:.0%} có lương)", va="center", fontsize=11)
-    ax.set_yticks(y, order)
+        ax.text(total[g], i, f" {total[g]} ({paid[g] / total[g]:.0%} with salary)", va="center", fontsize=11)
+    ax.set_yticks(y, [group_label(g) for g in order])
     ax.invert_yaxis()
-    ax.set_xlabel("Số tin")
-    ax.set_xlim(0, total.max() * 1.35)
-    ax.set_title(f"Nhóm nghề ({jobs['category'].nunique()} giá trị \"Job Expertise\" gộp thành {len(order)} nhóm — A16)")
+    ax.set_xlabel("Number of jobs")
+    ax.set_xlim(0, total.max() * 1.4)
+    ax.set_title(f"Job families ({jobs['category'].nunique()} ITviec \"Job Expertise\" values "
+                 f"grouped into {len(order)} — A16)")
     ax.legend(loc="lower right")
     return _finish(fig)
 
@@ -305,16 +313,16 @@ def plot_skills_per_job(jobs, skills):
     fig, ax = _new_fig()
     ax.hist(per_job, bins=np.arange(0, per_job.max() + 2) - 0.5, color=COLOR, edgecolor="white")
     ax.axvline(per_job.median(), color=COLOR_2, linestyle="--", linewidth=2)
-    ax.text(per_job.median(), ax.get_ylim()[1] * 0.95, f" trung vị = {per_job.median():.0f}",
+    ax.text(per_job.median(), ax.get_ylim()[1] * 0.95, f" median = {per_job.median():.0f}",
             color=COLOR_2, va="top")
-    ax.set_xlabel("Số kỹ năng trích được trong 1 tin")
-    ax.set_ylabel("Số tin")
-    ax.set_title("Số kỹ năng mỗi tin tuyển dụng yêu cầu")
-    return _finish(fig, SOURCE_NOTE + f"; {int((per_job == 0).sum())} tin không bắt được kỹ năng nào")
+    ax.set_xlabel("Number of skills extracted from one job")
+    ax.set_ylabel("Number of jobs")
+    ax.set_title("Number of skills required per job")
+    return _finish(fig, SOURCE_NOTE + f"; {int((per_job == 0).sum())} jobs with no extracted skill")
 
 
 def skill_lift_matrix(skills, top=15):
-    """Lift giữa từng cặp trong top kỹ năng: P(a,b) / (P(a)·P(b)) trên toàn bộ tin."""
+    """Lift between each pair of the top skills: P(a,b) / (P(a)·P(b)) over all jobs."""
     cols = list(skill_share(skills).head(top).index)
     X = skills[cols].to_numpy(dtype=float)
     p = X.mean(axis=0)
@@ -336,9 +344,9 @@ def plot_cooccurrence(jobs, skills, top=15):
             if not np.isnan(v):
                 ax.text(j, i, f"{v:.1f}", ha="center", va="center", fontsize=9,
                         color="white" if abs(v - 1) > 0.6 else "black")
-    fig.colorbar(im, ax=ax, label="Lift (>1: hay đi cùng nhau, <1: ít đi cùng)")
-    ax.set_title(f"Mức độ đi kèm giữa {top} kỹ năng phổ biến nhất (lift)")
-    return _finish(fig, SOURCE_NOTE + f"; lift tính trên toàn bộ {len(jobs)} tin")
+    fig.colorbar(im, ax=ax, label="Lift (>1: often together, <1: rarely together)")
+    ax.set_title(f"How often the {top} most common skills appear together (lift)")
+    return _finish(fig, SOURCE_NOTE + f"; lift over all {len(jobs)} jobs")
 
 
 def plot_skills_by_group(jobs, skills, top=12):
@@ -349,14 +357,14 @@ def plot_skills_by_group(jobs, skills, top=12):
     fig, ax = _new_fig((12, 7))
     im = ax.imshow(table.values, cmap="Blues", vmin=0, vmax=100, aspect="auto")
     ax.set_xticks(range(len(cols)), cols, rotation=45, ha="right")
-    ax.set_yticks(range(len(order)), [f"{g} (n={groups[g]})" for g in order])
+    ax.set_yticks(range(len(order)), [f"{group_label(g)} (n={groups[g]})" for g in order])
     for i in range(table.shape[0]):
         for j in range(table.shape[1]):
             v = table.iat[i, j]
             ax.text(j, i, f"{v:.0f}", ha="center", va="center", fontsize=9,
                     color="white" if v > 55 else "black")
-    fig.colorbar(im, ax=ax, label="% số tin trong nhóm nghề")
-    ax.set_title(f"Top {top} kỹ năng theo nhóm nghề")
+    fig.colorbar(im, ax=ax, label="% of jobs in the job family")
+    ax.set_title(f"Top {top} skills by job family")
     return _finish(fig)
 
 

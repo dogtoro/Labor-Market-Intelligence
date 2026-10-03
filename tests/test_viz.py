@@ -1,4 +1,4 @@
-"""Smoke test cho src/viz/eda.py — cần dữ liệu đã freeze (tải từ Drive), thiếu thì skip."""
+"""Smoke tests for src/viz/eda.py — need the frozen data (from Drive); skipped otherwise."""
 import matplotlib
 
 matplotlib.use("Agg")
@@ -14,12 +14,12 @@ def data():
     try:
         return eda.load_data()
     except FileNotFoundError:
-        pytest.skip("Chưa có data/processed/*.parquet (tải từ Drive)")
+        pytest.skip("data/processed/*.parquet missing (download from Drive)")
 
 
 def test_load_data_shapes(data):
     jobs, skills = data
-    assert len(jobs) == len(skills)                      # skill_matrix reindex đủ mọi tin
+    assert len(jobs) == len(skills)                      # skill_matrix reindexed to every job
     assert set(skills.to_numpy().ravel()) <= {0, 1}
     assert jobs["expertise_group"].notna().all()
     assert set(jobs["level_group"]) <= set(eda.LEVEL_ORDER)
@@ -28,7 +28,7 @@ def test_load_data_shapes(data):
 def test_salary_tertiles_match_decision(data):
     jobs, _ = data
     labels, _ = eda.salary_tertiles(jobs)
-    assert labels.value_counts().reindex(eda.SALARY_CLASSES).tolist() == [60, 55, 57]  # DECISIONS Mốc 2
+    assert labels.value_counts().reindex(eda.SALARY_CLASSES).tolist() == [60, 55, 57]  # DECISIONS milestone 2
 
 
 def test_skill_lift_matrix_symmetric(data):

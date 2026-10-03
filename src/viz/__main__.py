@@ -1,4 +1,4 @@
-"""Xuất toàn bộ biểu đồ EDA → reports/figures/eda_*.png (bước `figures` của pipeline)."""
+"""Export all EDA charts → reports/figures/eda_*.png (the pipeline's `figures` step)."""
 import matplotlib
 
 matplotlib.use("Agg")

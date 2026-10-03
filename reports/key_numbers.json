@@ -45,39 +45,39 @@
     "top_rules_hold_on_test": "9/10",
     "top_rules": [
       {
-        "Luật": "spring → java",
-        "Train conf": 1.0,
-        "Train lift": 4.683,
-        "Test conf": 1.0,
-        "Test lift": 4.0
+        "rule": "spring → java",
+        "train_conf": 1.0,
+        "train_lift": 4.683,
+        "test_conf": 1.0,
+        "test_lift": 4.0
       },
       {
-        "Luật": "kubernetes → docker",
-        "Train conf": 0.656,
-        "Train lift": 3.2,
-        "Test conf": 0.723,
-        "Test lift": 2.419
+        "rule": "kubernetes → docker",
+        "train_conf": 0.656,
+        "train_lift": 3.2,
+        "test_conf": 0.723,
+        "test_lift": 2.419
       },
       {
-        "Luật": "gcp → aws",
-        "Train conf": 0.812,
-        "Train lift": 2.999,
-        "Test conf": 0.939,
-        "Test lift": 3.091
+        "rule": "gcp → aws",
+        "train_conf": 0.812,
+        "train_lift": 2.999,
+        "test_conf": 0.939,
+        "test_lift": 3.091
       },
       {
-        "Luật": "microservices → kubernetes",
-        "Train conf": 0.608,
-        "Train lift": 2.994,
-        "Test conf": 0.441,
-        "Test lift": 1.915
+        "rule": "microservices → kubernetes",
+        "train_conf": 0.608,
+        "train_lift": 2.994,
+        "test_conf": 0.441,
+        "test_lift": 1.915
       },
       {
-        "Luật": "azure → aws",
-        "Train conf": 0.744,
-        "Train lift": 2.749,
-        "Test conf": 0.778,
-        "Test lift": 2.559
+        "rule": "azure → aws",
+        "train_conf": 0.744,
+        "train_lift": 2.749,
+        "test_conf": 0.778,
+        "test_lift": 2.559
       }
     ]
   },
