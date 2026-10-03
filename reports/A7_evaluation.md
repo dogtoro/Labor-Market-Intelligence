@@ -1,62 +1,53 @@
-# A7 Evaluation - 20 Random JDs
+# A7 Evaluation — Độ phủ từ điển kỹ năng trên 20 JD ngẫu nhiên
 
-## Job: Junior Android Developer Kotlin/Java (Motorist Pte Ltd)
-**Extracted Skills:** java, kotlin, git, api, english
+Sinh bởi `scripts/verify_a7.py` (mẫu 20 JD, seed=42). Nhãn tay ở `reports/a7_manual_labels.csv`.
 
-## Job: Technical Lead C#, .NET, Azure (MiTek Vietnam)
-**Extracted Skills:** csharp, dotnet, kubernetes, terraform, git, cicd, azure, api, microservices, english
+- JD đã gán nhãn: **20/20**
+- Tổng kỹ năng thực tế (nhãn tay): **183**
+- Extractor bắt đúng: **145**
+- **Độ phủ (micro): 79.2%** — ngưỡng A7: 80% → **CHƯA ĐẠT**
 
-## Job: IT Comtor Japanese JLPT N2+ (ISV Vietnam)
-**Extracted Skills:** japanese
+## Kỹ năng bị sót nhiều nhất
 
-## Job: Middle Data Engineer Apache Spark, Trino (IMIP Technology And Solution Consultancy)
-**Extracted Skills:** spark, airflow, dbt, kubernetes, cicd, power_bi, grafana, data_pipeline, data_governance
+| Kỹ năng | Số JD bị sót |
+|---|---|
+| communication | 5 |
+| teamwork | 2 |
+| jetpack_compose | 1 |
+| rxjava | 1 |
+| android_sdk | 1 |
+| junit | 1 |
+| firebase | 1 |
+| sqlite | 1 |
+| retrofit | 1 |
+| realm | 1 |
+| github_actions | 1 |
+| backstage | 1 |
+| microsoft_fabric | 1 |
+| iceberg | 1 |
+| open_policy_agent | 1 |
 
-## Job: Manual Tester QA/QC (MiTek Vietnam)
-**Extracted Skills:** api, agile, english
+## Chi tiết từng JD
 
-## Job: Fullstack Developer ReactJS, Angular, NodeJS, Python (CÔNG TY TNHH SOCOTEC VIỆT NAM)
-**Extracted Skills:** python, angular, nodejs, git, aws, postgresql, english
-
-## Job: Software Engineering Manager C#, .Net, Azure (MiTek Vietnam)
-**Extracted Skills:** csharp, dotnet, agile, english
-
-## Job: Embedded Software Engineer MCU, RTOS (LG Electronics Development Vietnam (LGEDV))
-**Extracted Skills:** cpp, git, agile, jira, english
-
-## Job: Senior Project Manager (TPIsoftware Co., Ltd)
-**Extracted Skills:** agile, jira, english
-
-## Job: IT Business Analyst Fintech, English/ Mandarin (UNIT Corp)
-**Extracted Skills:** sql, agile, english
-
-## Job: Technical Program Manager (Vulcan Labs)
-**Extracted Skills:** api, microservices
-
-## Job: DevOps Engineer - Upto 3500 (Viettel Post (A Member of Viettel Group))
-**Extracted Skills:** python, java, javascript, php, hadoop, airflow, docker, kubernetes, jenkins, git, cicd, postgresql, mongodb, elasticsearch, grafana, machine_learning, linux, bash, nifi
-
-## Job: Technical Business Analyst (Hitachi Digital Services)
-**Extracted Skills:** agile, english
-
-## Job: Business Analyst Japanese (Be A Racer)
-**Extracted Skills:** communication, japanese
-
-## Job: Thuc tap sinh lap trinh (Tinh Van Consulting)
-**Extracted Skills:** javascript, csharp, angular, nodejs, dotnet, html_css, teamwork
-
-## Job: Senior Fullstack Engineer (Grab (Vietnam) Ltd.)
-**Extracted Skills:** sql, vuejs, nodejs, docker, kubernetes, git, cicd, aws, gcp, api, microservices, agile
-
-## Job: QA Specialist (AcceleratorApp)
-**Extracted Skills:** jira
-
-## Job: Junior Security Engineer (ZALORA Group)
-**Extracted Skills:** python, docker, kubernetes, git, aws, gcp, bash, llm
-
-## Job: System Engineer Server/Storage/SAN (SHINHAN DS)
-**Extracted Skills:** linux, english
-
-## Job: Principal Golang Engineer in /Hanoi (MONEY FORWARD VIETNAM CO.,LTD)
-**Extracted Skills:** sql, go, kafka, docker, kubernetes, git, cicd, aws, elasticsearch, grafana, api, microservices, generative_ai, langchain
-
+| # | Vị trí (Công ty) | Nhãn tay | Bắt đúng | Độ phủ | Bị sót |
+|---|---|---|---|---|---|
+| 0 | Junior Android Developer Kotlin/Java (Motorist Pte Ltd) | 15 | 7 | 47% | android_sdk; firebase; jetpack_compose; junit; realm; retrofit; rxjava; sqlite |
+| 1 | Technical Lead C#, .NET, Azure (MiTek Vietnam) | 13 | 10 | 77% | backstage; communication; github_actions |
+| 2 | IT Comtor Japanese JLPT N2+ (ISV Vietnam) | 1 | 1 | 100% |  |
+| 3 | Middle Data Engineer Apache Spark, Trino (IMIP Technology And Solution Consultancy) | 15 | 10 | 67% | airbyte; iceberg; microsoft_fabric; open_policy_agent; trino |
+| 4 | Manual Tester QA/QC (MiTek Vietnam) | 6 | 6 | 100% |  |
+| 5 | Fullstack Developer ReactJS, Angular, NodeJS, Python (CÔNG TY TNHH SOCOTEC VIỆT NAM) | 11 | 9 | 82% | communication; french |
+| 6 | Software Engineering Manager C#, .Net, Azure (MiTek Vietnam) | 5 | 5 | 100% |  |
+| 7 | Embedded Software Engineer MCU, RTOS (LG Electronics Development Vietnam (LGEDV)) | 10 | 7 | 70% | c; mcu; rtos |
+| 8 | Senior Project Manager (TPIsoftware Co., Ltd) | 5 | 4 | 80% | teamwork |
+| 9 | IT Business Analyst Fintech, English/ Mandarin (UNIT Corp) | 5 | 3 | 60% | communication; mandarin |
+| 10 | Technical Program Manager (Vulcan Labs) | 2 | 2 | 100% |  |
+| 11 | DevOps Engineer - Upto 3500 (Viettel Post (A Member of Viettel Group)) | 25 | 22 | 88% | gitlab_ci; haproxy; zabbix |
+| 12 | Technical Business Analyst (Hitachi Digital Services) | 3 | 2 | 67% | communication |
+| 13 | Business Analyst Japanese (Be A Racer) | 3 | 2 | 67% | teamwork |
+| 14 | Thuc tap sinh lap trinh (Tinh Van Consulting) | 9 | 8 | 89% | vb_net |
+| 15 | Senior Fullstack Engineer (Grab (Vietnam) Ltd.) | 14 | 14 | 100% |  |
+| 16 | QA Specialist (AcceleratorApp) | 8 | 3 | 38% | clickup; communication; cypress; playwright; selenium |
+| 17 | Junior Security Engineer (ZALORA Group) | 11 | 10 | 91% | cicd |
+| 18 | System Engineer Server/Storage/SAN (SHINHAN DS) | 4 | 3 | 75% | san_storage |
+| 19 | Principal Golang Engineer in /Hanoi (MONEY FORWARD VIETNAM CO.,LTD) | 18 | 17 | 94% | circleci |
