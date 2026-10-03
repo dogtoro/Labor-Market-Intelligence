@@ -11,7 +11,7 @@ Dự án môn Fundamentals of Data Science (USTH). Nhóm 5 người, 7 ngày (29
 Crawl tin tuyển dụng IT/Data **công khai** trên ITviec (1 đợt duy nhất; đổi từ TopCV tối 29/09
 vì bị Cloudflare JS Challenge chặn toàn domain — xem `docs/tos_review.md`) → parse HTML → làm sạch
 + chuẩn hóa lương → trích kỹ năng bằng từ điển → chạy **Association Rules (Apriori)** và
-**Hierarchical Clustering (Jaccard)** → tuỳ chọn **Decision Tree phân lớp dải lương** →
+**Hierarchical Clustering (Jaccard)** → **Decision Tree phân lớp dải lương** (Mốc 2: giữ) →
 EDA, hình vẽ, slide trình bày.
 
 ## 2. Pipeline
@@ -80,7 +80,8 @@ python scripts/run_pipeline.py clean    # Dedup + chuẩn hóa lương
 python scripts/run_pipeline.py skills   # Trích kỹ năng → ma trận
 python scripts/run_pipeline.py rules    # Apriori
 python scripts/run_pipeline.py cluster  # Hierarchical clustering
-python scripts/run_pipeline.py classify # Decision tree (tuỳ chọn)
+python scripts/run_pipeline.py classify # Decision tree (nested CV)
+python scripts/run_pipeline.py bias     # Thiên lệch tin có/không lương
 python scripts/run_pipeline.py figures  # Xuất hình vẽ
 python scripts/run_pipeline.py all      # Chạy toàn bộ pipeline
 python scripts/make_manifest.py         # Tạo manifest SHA-256

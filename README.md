@@ -52,7 +52,7 @@ Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá d�
 | Mã | Câu hỏi nghiên cứu | Phương pháp / Mô hình giải quyết |
 | :--- | :--- | :--- |
 | **Q1** | Những nhóm kỹ năng nào thường xuyên **đồng xuất hiện (co-occur)** trong các bản mô tả công việc (JD)? Luật nào có độ tin cậy (*Confidence*) và độ nâng (*Lift*) cao nhất? | **Association Rules (Apriori Algorithm)** |
-| **Q2** | Các tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? Các cụm tìm được có khớp với danh mục tuyển dụng chuẩn không? | **Hierarchical Clustering (Jaccard Distance + Ward's/Average Linkage) & Cluster Purity** |
+| **Q2** | Các tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? Các cụm tìm được có khớp với danh mục tuyển dụng chuẩn không? | **Hierarchical Clustering (Jaccard Distance + Weighted Linkage) & Cluster Purity** |
 | **Q3** | Các kỹ năng nào đóng vai trò **tiên quyết để phân định dải thu nhập** (thấp vs trung bình vs cao)? Có tồn tại thiên lệch hệ thống giữa tin công khai lương và tin giấu lương không? | **Decision Tree Classification (CART), Feature Importance & Missing Data Bias Analysis** |
 
 ### 1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận
@@ -179,7 +179,8 @@ Bài toán: Tìm các tập kỹ năng $X$ và $Y$ sao cho khi $X$ xuất hiện
 #### Chiến lược đánh giá bền vững (Temporal Train/Test Split):
 Thay vì khai phá trên toàn bộ tập dữ liệu dẫn đến nguy cơ overfit vào các mẫu ngẫu nhiên:
 - Sắp xếp dữ liệu theo `posted_date`. Chia **70% tin cũ làm Train Set** và **30% tin mới hơn làm Test Set**.
-- Khai phá luật trên Train Set với grid-search ngưỡng `min_support` ($\in [0.03, 0.05, 0.10]$) và lọc `lift > 1.2`.
+- Khai phá luật trên Train Set với `min_support` $\in \{0.03, 0.04, 0.05, 0.06, 0.10\}$, lọc `lift > 1.2` và `confidence ≥ 0.5`; chọn mức cho ra 20–100 luật. Thêm bảng riêng cho luật có ít nhất 1 kỹ năng data (`reports/rules_eval.md`).
+- Thứ tự luật và ranh giới train/test được cố định (sort ổn định theo `posted_date` + `job_id`) để kết quả tái lập được.
 - Kiểm chứng lại Support và Confidence của các luật trên Test Set để đánh giá tính ổn định theo thời gian của nhu cầu thị trường.
 
 ---
@@ -195,8 +196,9 @@ trong đó $f_{11}$ là số lượng kỹ năng cả 2 tin đều yêu cầu, $
 
 #### Thuật toán Gom cụm phân cấp (HAC) & Cắt cây (Dendrogram Truncation):
 - Bắt đầu với mỗi tin là một cụm riêng lẻ.
-- Gom dần các cụm gần nhau nhất theo phương pháp liên kết (Ward’s Linkage hoặc Average Linkage).
-- Trực quan hóa cây phả hệ (Dendrogram) và xác định số cụm tối ưu $k$ dựa trên đồ thị khoảng cách sáp nhập và Silhouette Score.
+- Gom dần các cụm gần nhau nhất theo **Weighted Linkage (WPGMA)**. Ward không hợp lệ với Jaccard; Average bị hiện tượng chaining (1 cụm chứa 95% tin) — xem `docs/DECISIONS.md` 03/10.
+- Trước khi phân cụm: bỏ kỹ năng mềm/công cụ quản lý, kỹ năng xuất hiện > 40% số tin hoặc < 10 tin, và tin còn < 2 kỹ năng.
+- Trực quan hóa Dendrogram; chọn $k \in [4, 8]$ có Silhouette cao nhất trong các $k$ mà cụm nhỏ nhất ≥ 15 tin.
 
 #### Đánh giá độ tinh khiết phân cụm (Cluster Purity):
 Để kiểm chứng xem các cụm kỹ năng tự nhiên có tương ứng với các chức danh thực tế trên thị trường hay không, so sánh nhãn cụm $C = \{c_1, c_2, \dots, c_k\}$ với nhãn danh mục thực tế của ITviec $T = \{t_1, t_2, \dots, t_J\}$:
@@ -207,7 +209,7 @@ $$\text{Purity}(C, T) = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
 
 ### 2.5 Phân lớp dự đoán dải lương & Tầm quan trọng đặc trưng (Decision Tree Classification)
 
-Bài toán: Dự đoán mức thu nhập thuộc phân lớp `Low`, `Mid`, hay `High` dựa trên tổ hợp kỹ năng, số năm kinh nghiệm và khu vực địa lý.
+Bài toán: Dự đoán mức thu nhập thuộc phân lớp `Low`, `Mid`, hay `High` (tertile — DECISIONS Mốc 2) dựa trên tổ hợp kỹ năng, cấp bậc và khu vực địa lý.
 
 #### Kiến trúc mô hình:
 - Thuật toán: **Decision Tree Classifier (CART)**.
@@ -216,22 +218,24 @@ Bài toán: Dự đoán mức thu nhập thuộc phân lớp `Low`, `Mid`, hay `
 - Ưu điểm cốt lõi: Mô hình dạng cây có khả năng **giải thích cao (High Interpretability)**, mô phỏng trực quan logic ra quyết định tuyển dụng và mức định giá kỹ năng của thị trường.
 
 #### Kỹ thuật kiểm thử & Kiểm soát Overfitting:
-- **K-Fold Stratified Cross-Validation ($k=5$):** Đảm bảo tỷ lệ các lớp lương đồng đều giữa các fold.
-- **Tối ưu hóa siêu tham số (Hyperparameter Pruning):** Điều chỉnh `max_depth` ($\in [3, 4, 5, 6]$) và `min_samples_leaf` ($\ge 10$) để tránh cây quá sâu học vẹt dữ liệu.
+- **Nested Stratified Cross-Validation:** vòng ngoài 5 fold để đánh giá (accuracy + confusion matrix trên dự đoán out-of-fold, 95% bootstrap CI), vòng trong 3 fold để chọn siêu tham số.
+- **Tối ưu hóa siêu tham số (Hyperparameter Pruning):** `max_depth` $\in \{3, 4, 5, 6\}$, `min_samples_leaf` $\in \{5, 10, 15\}$ để tránh cây quá sâu học vẹt dữ liệu.
+- **Đặc trưng thực tế:** kỹ năng (≥ 5 lần trong 172 tin có lương), cấp bậc suy từ tiêu đề (one-hot, gộp Intern/Fresher/Junior → `Intern/Junior`, có `Unknown`), địa điểm (multi-hot). ITviec không có trường số năm kinh nghiệm.
 - **Trích xuất Feature Importance:** Đánh giá kỹ năng hoặc cấp bậc nào đóng vai trò giảm thiểu độ bất định (impurity) lớn nhất trong việc dự đoán lương.
 
 ---
 
 ### 2.6 Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)
 
-Trong dữ liệu tuyển dụng thực tế, tỷ lệ tin giấu lương ("Thoả thuận") thường chiếm tới 60–80%. Do đó, việc xây dựng mô hình dự đoán lương trên tập tin có lương có thể dẫn đến **Selection Bias (Thiên lệch chọn mẫu)**:
+Trên dữ liệu ITviec 29/09, 516/688 tin (75%) không công bố lương. Do đó, việc xây dựng mô hình dự đoán lương trên tập tin có lương có thể dẫn đến **Selection Bias (Thiên lệch chọn mẫu)**:
 - Nhóm tin công khai lương có thể chủ yếu là tin Junior / Fresher hoặc các doanh nghiệp có thang lương cố định.
 - Nhóm tin giấu lương có thể tập trung các vị trí Tech Lead, Solution Architect hoặc đãi ngộ đặc thù.
 
-Để đảm bảo tính khoa học và đạo đức nghiên cứu dữ liệu, dự án tiến hành **phân tích so sánh 2 nhóm tin (Disclosed vs. Undisclosed)** trên 3 chiều:
-1. Phân phối số năm kinh nghiệm yêu cầu.
-2. Tần suất xuất hiện của các kỹ năng cao cấp (ví dụ: Kubernetes, System Design, Big Data).
-3. Phân phối địa điểm và quy mô công ty.
+Để đảm bảo tính khoa học và đạo đức nghiên cứu dữ liệu, dự án tiến hành **phân tích so sánh 2 nhóm tin (Disclosed vs. Undisclosed)** trên 3 chiều (`reports/bias_analysis.md`):
+1. Kỹ năng: Fisher exact cho từng kỹ năng, hiệu chỉnh Benjamini–Hochberg.
+2. Địa điểm: Fisher exact + Benjamini–Hochberg (multi-hot HCM / HN / ĐN / khác).
+3. Cấp bậc (suy từ tiêu đề): Chi-square.
+(ITviec không có số năm kinh nghiệm hay quy mô công ty trong dữ liệu đã parse, nên không so sánh hai chiều này.)
 Kết quả so sánh này được ghi nhận tường minh trong báo cáo để xác định rõ giới hạn tin cậy của mô hình phân lớp.
 
 ---

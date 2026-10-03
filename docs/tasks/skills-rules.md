@@ -28,12 +28,12 @@ Xây từ điển kỹ năng IT/Data, trích kỹ năng từ JD text thành ma t
 | Apriori train + đánh giá test | Chiều 02/10 → sáng 03/10 |
 
 ## Definition of Done
-- [ ] `skill_dict.json` có ≥100 kỹ năng, mỗi kỹ năng ≥1 alias
-- [ ] `skill_matrix.parquet` qua `validate_skills()` không lỗi
-- [ ] Mỗi tin có ≥1 kỹ năng; kỹ năng có <5 tin bị loại
-- [ ] Apriori chạy với ≥3 giá trị min_support
-- [ ] Rules có lift >1
-- [ ] `rules_eval.md` so sánh ≥10 top rules train vs test; nhận xét overfit
+- [x] `skill_dict.json` có ≥100 kỹ năng, mỗi kỹ năng ≥1 alias (114)
+- [x] `skill_matrix.parquet` qua `validate_skills()` không lỗi (677 dòng × 100 kỹ năng)
+- [x] Mỗi tin có ≥1 kỹ năng; kỹ năng có <5 tin bị loại (11 tin không có kỹ năng bị loại)
+- [x] Apriori chạy với ≥3 giá trị min_support (5 mức)
+- [x] Rules có lift >1 (lọc >1,2)
+- [x] `rules_eval.md` so sánh ≥10 top rules train vs test; nhận xét overfit. A7: độ phủ 72,6% trên bộ kiểm tra độc lập — chưa đạt 80%, ghi vào hạn chế. Phần sửa sau 03/10 do Người 4 làm thay (DECISIONS 03/10).
 
 ## Lệnh test
 ```bash

@@ -107,7 +107,7 @@ Sitemap: https://itviec.com/dunggiatminh.xml
 | Git | **KHÔNG commit** — file `.html` nằm trong `.gitignore` |
 | Backup | Google Drive, thư mục `Funny DS/raw` |
 | Khi nào | Ngay sau crawl đầy đủ (tối 29/09) |
-| Hash tổng 688 file | ⏳ **Chưa có** — Người 1 chạy lệnh ở mục 4.4 trên máy có `data/raw/` rồi điền vào đây |
+| Hash tổng 688 file | `648765d9558b820b880f0367162a17701f1a86e7d04bc54fc8cf6396df8c44fc` — bản trên Drive (Trưởng nhóm tính 04/10). ⏳ Người 1 chạy cùng lệnh trên bản gốc để đối chiếu |
 
 ### 4.2 Crawl log (`data/crawl_log.csv`)
 
@@ -154,12 +154,13 @@ python scripts/make_manifest.py && git diff --exit-code docs/MANIFEST.json
 Code dùng dữ liệu cho model (`src/models/features.py::load_and_verify_data`) tự kiểm hash
 với `MANIFEST.json` và dừng nếu lệch.
 
-**HTML thô** — ⏳ **chưa có hash** (DoD kickoff yêu cầu SHA-256 cho raw HTML). Người 1 chạy trên
-máy có đủ 688 file `data/raw/*.html` rồi điền kết quả vào bảng 4.1:
+**HTML thô** — hash tổng của bản trên Drive đã ghi ở bảng 4.1 (04/10). Người 1 chạy lệnh dưới đây trên bản gốc;
+kết quả phải trùng. Lưu ý: 688 file đều xuống dòng kiểu CRLF (crawl trên Windows) — crawl lại trên Linux sẽ ra hash khác:
 
 ```bash
 # Hash từng file (lưu làm bằng chứng) + hash tổng (sắp theo tên để ổn định giữa các máy)
-find data/raw -maxdepth 1 -name '*.html' | sort | xargs sha256sum > raw_html_sha256.txt
+# LC_ALL=C: thứ tự sắp xếp không phụ thuộc locale (locale khác có thể bỏ qua dấu '-' khi sắp xếp)
+find data/raw -maxdepth 1 -name '*.html' | LC_ALL=C sort | xargs sha256sum > raw_html_sha256.txt
 wc -l raw_html_sha256.txt          # phải là 688
 sha256sum raw_html_sha256.txt      # hash tổng
 ```
@@ -171,7 +172,7 @@ sha256sum raw_html_sha256.txt      # hash tổng
 | Hạng mục | Quy định |
 |----------|----------|
 | Quyền truy cập Drive `Funny DS/raw` | Chỉ 5 thành viên nhóm (+ giảng viên nếu được yêu cầu). ⏳ **Người 1 xác nhận** danh sách người có quyền và chế độ chia sẻ (không bật "Anyone with the link") |
-| Kiểm tra sau khi backup | Sau khi tải HTML lên/về Drive, chạy lại lệnh hash ở mục 4.4 và so với hash tổng đã ghi — ⏳ **chưa thực hiện** cho bản backup hiện tại |
+| Kiểm tra sau khi backup | Sau khi tải HTML lên/về Drive, chạy lại lệnh hash ở mục 4.4 và so với hash tổng đã ghi — bản tải về từ Drive đã có hash (bảng 4.1); ⏳ còn đối chiếu với bản gốc của Người 1 |
 | Thời hạn lưu trữ | HTML thô chỉ dùng cho môn học; **xoá khỏi Drive và máy cá nhân sau khi có điểm môn học**. `crawl_log.csv`, `MANIFEST.json` và số liệu tổng hợp được giữ trong repo |
 | Dữ liệu cá nhân | JD có thể chứa tên, email, số điện thoại của người tuyển dụng. Không trích nguyên văn JD, không công bố thông tin liên hệ trong báo cáo/slide; các file nhãn (vd. `reports/a7_manual_labels*.csv`) chỉ chứa tên vị trí, công ty và tên kỹ năng |
 

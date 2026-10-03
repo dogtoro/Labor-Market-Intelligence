@@ -218,7 +218,7 @@ def evaluate_clusters(cluster_df, jobs_df, stats):
                 f"{n_total - n_used} tin ({(n_total - n_used) / n_total:.0%}) bị loại vì không bắt được kỹ năng nào "
                 f"hoặc còn < {MIN_SKILLS_PER_JOB} kỹ năng sau khi bỏ kỹ năng mềm/hiếm/quá phổ biến.\n")
         f.write("- Nhóm nghề so sánh lấy từ 72 giá trị \"Job Expertise\" gộp thành 10 nhóm (`src/models/expertise_groups.json`, "
-                "ASSUMPTIONS A16 — chờ review).\n\n")
+                "ASSUMPTIONS A16 — đã review 04/10).\n\n")
         
         f.write("## Crosstab (Cluster x Expertise Group)\n\n")
         headers = ["Cluster"] + list(crosstab.columns)

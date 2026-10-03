@@ -19,7 +19,7 @@ Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật
 | STT | Câu hỏi nghiên cứu | Ý nghĩa khoa học & ứng dụng | Phương pháp / Mô hình |
 |---|---|---|---|
 | **Q1** | Những nhóm kỹ năng nào thường xuyên **đồng xuất hiện** (co-occur) trong các bản mô tả công việc (JD)? | Tìm ra các bộ kỹ năng bổ trợ (complementary skills) cần học cùng lúc. | **Association Rules (Apriori)** |
-| **Q2** | Tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? | Tự động gom cụm vị trí công việc, so sánh với trường "Job Expertise" của ITviec. | **Hierarchical Clustering (Jaccard + Ward/Average Linkage)** |
+| **Q2** | Tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? | Tự động gom cụm vị trí công việc, so sánh với trường "Job Expertise" của ITviec. | **Hierarchical Clustering (Jaccard + Weighted Linkage)** |
 | **Q3** | Kỹ năng, kinh nghiệm và địa điểm nào **dự báo dải lương cao**? | Giải thích quy luật định giá kỹ năng của thị trường. | **Decision Tree Classification (CART)** |
 
 ---
@@ -67,21 +67,21 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
   - $\text{Lift}(X \to Y) = \frac{\text{Confidence}(X \to Y)}{\text{Support}(Y)}$ (lọc các luật có $\text{Lift} > 1.2$)
 - **Kiểm định tính bền vững (Temporal Evaluation):**
   - Chia tập dữ liệu theo thứ tự thời gian `posted_date`: 70% tin cũ làm Train, 30% tin mới làm Test.
-  - Khai phá luật trên Train và đánh giá lại Support, Confidence trên Test nhằm kiểm tra hiện tượng suy giảm luật (rule drift).
+  - Khai phá luật trên Train (`min_support` ∈ {0.03, 0.04, 0.05, 0.06, 0.10}, `confidence ≥ 0.5`) và đánh giá lại Support, Confidence, Lift trên Test nhằm kiểm tra hiện tượng suy giảm luật (rule drift).
 
 ### Phương pháp 2: Phân cụm Phân cấp (Hierarchical Agglomerative Clustering)
 - **Độ đo khoảng cách Jaccard:**
   $$d_J(\mathbf{u}, \mathbf{v}) = 1 - \frac{|\mathbf{u} \cap \mathbf{v}|}{|\mathbf{u} \cup \mathbf{v}|}$$
-- **Phương pháp liên kết:** Ward's Linkage hoặc Average Linkage trên ma trận khoảng cách.
-- **Xác định số cụm tối ưu $k$:** Biểu đồ Dendrogram kết hợp Silhouette Score.
+- **Phương pháp liên kết:** Weighted Linkage (WPGMA). Ward không hợp lệ với Jaccard; Average bị chaining (DECISIONS 03/10).
+- **Xác định số cụm tối ưu $k$:** Dendrogram + Silhouette, $k \in [4, 8]$ với cụm nhỏ nhất ≥ 15 tin.
 - **Đánh giá độ tinh khiết (Purity):**
   $$\text{Purity} = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
-  So sánh cụm dự đoán $c_k$ với danh mục tuyển dụng chuẩn $t_j$ ("Job Expertise" của ITviec, gộp thành 6–8 nhóm — A16).
+  So sánh cụm dự đoán $c_k$ với danh mục tuyển dụng chuẩn $t_j$ ("Job Expertise" của ITviec, 72 giá trị gộp thành 10 nhóm — A16, đã review).
 
 ### Phương pháp 3: Cây quyết định Phân lớp Dải Lương (Decision Tree Classifier)
 - **Mục tiêu:** Phân lớp tin tuyển dụng vào 3 mức lương: Low, Mid, High.
-- **Đặc trưng đầu vào:** Ma trận kỹ năng, số năm kinh nghiệm, khu vực làm việc (Hà Nội, TP.HCM, Remote...).
-- **Huấn luyện & Tối ưu:** 5-Fold Stratified Cross-Validation, cắt tỉa độ sâu (`max_depth = 3..6`, `min_samples_leaf >= 10`).
+- **Đặc trưng đầu vào:** Ma trận kỹ năng, cấp bậc suy từ tiêu đề (`Intern/Junior`, Middle, Senior, Lead, Manager, Unknown), khu vực làm việc (HCM, HN, ĐN, khác). ITviec không có số năm kinh nghiệm.
+- **Huấn luyện & Tối ưu:** Nested Stratified CV (ngoài 5 fold đánh giá, trong 3 fold chọn `max_depth` ∈ {3..6}, `min_samples_leaf` ∈ {5, 10, 15}), 95% bootstrap CI.
 - **Khả năng diễn giải:** Xuất biểu đồ cây và bảng xếp hạng tầm quan trọng đặc trưng (Feature Importance).
 
 ### Phân tích Thiên lệch Dữ liệu Khuyết (Missing Salary Bias Analysis)

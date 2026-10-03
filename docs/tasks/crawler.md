@@ -32,8 +32,8 @@ Thu thập HTML thô từ ITviec cho tin tuyển dụng IT/Data, đảm bảo tu
 - [x] `crawl_log.csv` ghi đủ mọi request, delay ≥3s giữa các request — 691 request ITviec, 100% HTTP 200, delay nhỏ nhất 3,32s (log gộp pilot + crawl đầy đủ, 719 dòng)
 - [x] User-Agent đúng format: `USTH-FDS-Project/2026 (contact: ...)` — log không ghi UA; Người 1 xác nhận (01/10) đã chạy với `CRAWL_CONTACT` là email thật của nhóm
 - [x] Không có request nào tới path bị robots.txt chặn (chỉ `/subscriptions/new` bị chặn; log không có path này)
-- [ ] SHA-256 hash khớp khi chạy lại `scripts/make_manifest.py`
-- [ ] `docs/governance.md` đủ 4 mục
+- [x] SHA-256 hash khớp khi chạy lại `scripts/make_manifest.py` (data/processed); hash HTML thô ở `docs/governance.md` 4.1 — ⏳ Người 1 đối chiếu với bản gốc
+- [x] `docs/governance.md` đủ 4 mục (+ mục 5) — viết bởi Người 4 (Zang), Người 1 cần xác nhận các mục ⏳
 
 ## Trạng thái 01/10
 - Crawl đầy đủ **xong** tối 29/09: 688 tin, HTML backup trên Drive (`Funny DS/raw`), log đã gộp vào `data/crawl_log.csv` trên `main`.

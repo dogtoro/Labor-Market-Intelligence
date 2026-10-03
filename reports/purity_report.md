@@ -33,7 +33,7 @@
 - **Các cụm nhỏ có đặc trưng rõ hơn:** cụm 1 (43 tin): sql (88%), python (26%); cụm 2 (29 tin): aws (52%), data_governance (52%); cụm 3 (76 tin): llm (61%), python (57%).
 - **Purity 0.334 so với baseline 0.208** (baseline = gom tất cả vào 1 cụm, tức tỷ lệ nhóm nghề đông nhất): cụm kỹ năng khớp nhóm nghề tốt hơn baseline nhưng còn xa mức tách bạch; F-measure 0.323.
 - **Phạm vi:** chỉ 548/688 tin (80%) được phân cụm; 140 tin (20%) bị loại vì không bắt được kỹ năng nào hoặc còn < 2 kỹ năng sau khi bỏ kỹ năng mềm/hiếm/quá phổ biến.
-- Nhóm nghề so sánh lấy từ 72 giá trị "Job Expertise" gộp thành 10 nhóm (`src/models/expertise_groups.json`, ASSUMPTIONS A16 — chờ review).
+- Nhóm nghề so sánh lấy từ 72 giá trị "Job Expertise" gộp thành 10 nhóm (`src/models/expertise_groups.json`, ASSUMPTIONS A16 — đã review 04/10).
 
 ## Crosstab (Cluster x Expertise Group)
 
