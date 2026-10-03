@@ -1,0 +1,162 @@
+{
+  "data": {
+    "n_jobs": 688,
+    "crawl_date": "2026-09-29",
+    "n_jobs_with_skills": 677,
+    "n_skills_in_matrix": 100,
+    "n_jobs_clustered": 548,
+    "n_jobs_with_salary": 172,
+    "pct_with_salary": 25.0,
+    "posted_from": "2026-08-10",
+    "posted_to": "2026-09-29",
+    "skill_dict_coverage_a7_pct": 72.6
+  },
+  "eda": {
+    "top10_skills_pct": {
+      "english": 54.7,
+      "communication": 41.7,
+      "api": 36.0,
+      "cicd": 31.4,
+      "git": 28.6,
+      "sql": 28.5,
+      "aws": 27.6,
+      "agile": 25.6,
+      "python": 25.4,
+      "docker": 23.0
+    },
+    "salary_median_million_vnd": 38.7,
+    "currency_counts": {
+      "USD": 151,
+      "VND": 21
+    },
+    "pct_level_unknown": 42.4,
+    "location_counts": {
+      "loc_hcm": 425,
+      "loc_hn": 288,
+      "loc_dn": 34,
+      "loc_other": 3
+    }
+  },
+  "q1_rules": {
+    "n_train": 473,
+    "n_test": 204,
+    "min_support": 0.1,
+    "n_rules": 35,
+    "top_rules_hold_on_test": "9/10",
+    "top_rules": [
+      {
+        "Luật": "spring → java",
+        "Train conf": 1.0,
+        "Train lift": 4.683,
+        "Test conf": 1.0,
+        "Test lift": 4.0
+      },
+      {
+        "Luật": "kubernetes → docker",
+        "Train conf": 0.656,
+        "Train lift": 3.2,
+        "Test conf": 0.723,
+        "Test lift": 2.419
+      },
+      {
+        "Luật": "gcp → aws",
+        "Train conf": 0.812,
+        "Train lift": 2.999,
+        "Test conf": 0.939,
+        "Test lift": 3.091
+      },
+      {
+        "Luật": "microservices → kubernetes",
+        "Train conf": 0.608,
+        "Train lift": 2.994,
+        "Test conf": 0.441,
+        "Test lift": 1.915
+      },
+      {
+        "Luật": "azure → aws",
+        "Train conf": 0.744,
+        "Train lift": 2.749,
+        "Test conf": 0.778,
+        "Test lift": 2.559
+      }
+    ]
+  },
+  "q2_clustering": {
+    "k": 4,
+    "cluster_sizes": {
+      "1": 43,
+      "2": 29,
+      "3": 76,
+      "4": 400
+    },
+    "silhouette": 0.048,
+    "purity": 0.334,
+    "baseline_purity": 0.208,
+    "f_measure": 0.323,
+    "pct_jobs_in_largest_cluster": 73.0
+  },
+  "q3_tree": {
+    "n_jobs": 172,
+    "n_features": 80,
+    "class_counts": {
+      "Low": 60,
+      "Mid": 55,
+      "High": 57
+    },
+    "tertile_bounds_million_vnd": [
+      32.2,
+      50.0
+    ],
+    "accuracy": 0.529,
+    "accuracy_ci95": [
+      0.453,
+      0.605
+    ],
+    "baseline": 0.349,
+    "macro_f1": 0.506,
+    "recall_by_class": {
+      "Low": 0.717,
+      "Mid": 0.236,
+      "High": 0.614
+    },
+    "final_params": {
+      "max_depth": 3,
+      "min_samples_leaf": 5
+    },
+    "feature_importance": {
+      "lvl_Intern/Junior": 0.455,
+      "lvl_Middle": 0.224,
+      "lvl_Unknown": 0.202,
+      "cpp": 0.119
+    }
+  },
+  "bias": {
+    "n_with_salary": 172,
+    "n_without_salary": 516,
+    "n_skills_tested": 100,
+    "n_skills_significant": 0,
+    "level_chi2_p": 0.06,
+    "location": {
+      "loc_hcm": {
+        "pct_with_salary": 47.7,
+        "pct_without_salary": 66.5,
+        "adj_p": 0.0001
+      },
+      "loc_hn": {
+        "pct_with_salary": 51.7,
+        "pct_without_salary": 38.6,
+        "adj_p": 0.0063
+      },
+      "loc_dn": {
+        "pct_with_salary": 4.1,
+        "pct_without_salary": 5.2,
+        "adj_p": 0.914
+      },
+      "loc_other": {
+        "pct_with_salary": 0.6,
+        "pct_without_salary": 0.4,
+        "adj_p": 1.0
+      }
+    }
+  }
+}

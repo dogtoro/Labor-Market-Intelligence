@@ -23,7 +23,7 @@ STEPS = {
     "cluster": "Chạy hierarchical clustering (Jaccard)",
     "classify": "Chạy decision tree phân lớp lương",
     "bias": "Phân tích thiên lệch tin có/không lương → reports/bias_analysis.md",
-    "figures": "Xuất hình vẽ → reports/figures/",
+    "figures": "Xuất hình EDA → reports/figures/eda_*.png",
     "all": "Chạy toàn bộ pipeline",
     "test": "Chạy pytest",
     "manifest": "Tạo SHA-256 manifest",
@@ -78,6 +78,10 @@ def run_step(step: str):
 
     if step == "bias":
         subprocess.run([sys.executable, "-m", "src.models.bias_analysis"], cwd=PROJECT_ROOT, check=True)
+        return
+
+    if step == "figures":
+        subprocess.run([sys.executable, "-m", "src.viz"], cwd=PROJECT_ROOT, check=True)
         return
 
     if step == "all":

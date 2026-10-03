@@ -36,7 +36,7 @@
 | T4 30/09 | | Crawl đầy đủ (qua đêm), parser, EDA draft — **crawl + parser + clean xong** (688 tin) |
 | T5 01/10 | **Mốc 2 (tối)** | Freeze dữ liệu + SHA-256, quyết định decision tree — **xong: GIỮ DT (tertile)**; freeze + manifest: **xong** (`docs/MANIFEST.json`) |
 | T6 02/10 | | Chạy model (Apriori, clustering, tree nếu giữ) — **xong 03/10, merge vào `main` 04/10** |
-| T7 03/10 | | Đánh giá, hình vẽ, bản nháp báo cáo |
+| T7 03/10 | | Đánh giá, hình vẽ, bản nháp báo cáo — **notebook + hình xong 04/10** |
 | CN 04/10 | **Mốc 3 (tối)** | Slide + demo, khoá nội dung |
 | T2 05/10 | | Tổng duyệt, sửa lỗi |
 | T3 06/10 | 🎤 | **Present** |

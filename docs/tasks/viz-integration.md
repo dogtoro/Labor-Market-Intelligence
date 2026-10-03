@@ -30,18 +30,26 @@ Tạo mọi thứ "người xem thấy": biểu đồ EDA, notebook tích hợp,
 | Slide + demo | Tối 04/10 (Mốc 3) |
 
 ## Definition of Done
-- [ ] `eda_draft.ipynb`: ≥5 biểu đồ (phân phối lương, top kỹ năng, top địa điểm, top cấp bậc, timeline)
-- [ ] `eda_full.ipynb`: ≥10 biểu đồ, có title, label trục, chú thích, font ≥12pt
-- [ ] `final_notebook.ipynb`: Restart & Run All thành công
+- [x] `eda_draft.ipynb`: ≥5 biểu đồ (phân phối lương, top kỹ năng, top địa điểm, top cấp bậc, timeline) — chạy trên dữ liệu thật đã freeze
+- [x] `eda_full.ipynb`: ≥10 biểu đồ, có title, label trục, chú thích, font ≥12pt — 14 hình → `reports/figures/eda_*.png`
+- [x] `final_notebook.ipynb`: Restart & Run All thành công (`jupyter nbconvert --execute`, ~5s); tự kiểm khớp 5 báo cáo trong `reports/`
 - [ ] Slide ≤15 slide: bìa, pipeline, EDA (≥3 hình), model (≥2 hình), kết luận, hạn chế
-- [ ] Demo chạy ≤2 phút setup, có ≥1 tương tác (filter/dropdown)
-- [ ] **Mọi con số trong slide sinh ra từ code** (không gõ tay)
+- [x] Demo chạy ≤2 phút setup, có ≥1 tương tác (filter/dropdown) — `notebooks/demo.ipynb`: dropdown kỹ năng + địa điểm
+- [ ] **Mọi con số trong slide sinh ra từ code** (không gõ tay) — lấy từ `reports/key_numbers.json` (sinh bởi `final_notebook.ipynb`) và các báo cáo trong `reports/`
+
+## Trạng thái 04/10
+- Notebook + hình: xong. Hàm vẽ dùng chung ở `src/viz/eda.py` (`python scripts/run_pipeline.py figures` xuất lại 14 hình EDA).
+- Hình cho slide: `reports/figures/eda_*.png` (EDA), `model_*.png` (luật train/test, hồ sơ cụm, feature importance),
+  cùng các hình của Người 4 (`dendrogram.png`, `tree_viz.png`, `confusion_matrix.png`, `bias_*.png`).
+- **Số liệu cho slide: `reports/key_numbers.json`** — không gõ tay; đổi dữ liệu thì chạy lại `final_notebook.ipynb`.
+- Còn lại: slide (Người 5 + Người 3).
 
 ## Lệnh test
 ```bash
 pytest tests/test_contract.py -v
 # Kiểm tra notebook:
 jupyter nbconvert --execute notebooks/final_notebook.ipynb --to html
+pytest tests/test_viz.py -v
 ```
 
 ## Ghi chú
