@@ -221,7 +221,8 @@
     "oracle_db": [
         "Oracle DB",
         "Oracle Database",
-        "OracleDB"
+        "OracleDB",
+        "Oracle Databases"
     ],
     "mssql": [
         "SQL Server",
@@ -292,7 +293,8 @@
     "data_warehouse": [
         "Data Warehouse",
         "DWH",
-        "Data Warehousing"
+        "Data Warehousing",
+        "Data Warehouses"
     ],
     "etl": [
         "ETL",
@@ -301,21 +303,27 @@
     ],
     "data_pipeline": [
         "Data Pipeline",
-        "data pipeline"
+        "data pipeline",
+        "Data Pipelines"
     ],
     "data_lake": [
         "Data Lake",
-        "data lake"
+        "data lake",
+        "Data Lakes"
     ],
     "api": [
         "API",
         "REST API",
         "RESTful",
-        "GraphQL"
+        "GraphQL",
+        "APIs",
+        "REST APIs"
     ],
     "microservices": [
         "Microservices",
-        "Micro Services"
+        "Micro Services",
+        "Microservice",
+        "Micro Service"
     ],
     "agile": [
         "Agile",
@@ -335,7 +343,8 @@
     "data_modeling": [
         "Data Modeling",
         "data modeling",
-        "Data Model"
+        "Data Model",
+        "Data Models"
     ],
     "statistics": [
         "Statistics",
@@ -344,7 +353,8 @@
     "ab_testing": [
         "A/B Testing",
         "AB Testing",
-        "A/B Test"
+        "A/B Test",
+        "A/B Tests"
     ],
     "bi": [
         "Business Intelligence"
@@ -366,7 +376,8 @@
         "Giao tiếp",
         "Communication skills",
         "Communication skill",
-        "Communicate"
+        "Communicate",
+        "Communicates"
     ],
     "teamwork": [
         "Teamwork",
@@ -400,7 +411,8 @@
         "GPT",
         "ChatGPT",
         "Gemini",
-        "LLMs"
+        "LLMs",
+        "Large Language Models"
     ],
     "generative_ai": [
         "Generative AI",
@@ -420,7 +432,8 @@
         "Pinecone",
         "Weaviate",
         "ChromaDB",
-        "Milvus"
+        "Milvus",
+        "Vector Databases"
     ],
     "dax": [
         "DAX"
@@ -473,6 +486,7 @@
         "Automated testing",
         "Selenium",
         "Cypress",
-        "Playwright"
+        "Playwright",
+        "Automation tests"
     ]
 }

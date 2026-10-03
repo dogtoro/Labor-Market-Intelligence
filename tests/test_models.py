@@ -327,3 +327,45 @@ def test_top_by_abs_diff_ties_sorted_by_name():
     assert list(top_by_abs_diff(df, 4).index) == ["aws", "figma", "jenkins", "kotlin"]
     # đảo thứ tự dòng đầu vào → kết quả không đổi
     assert list(top_by_abs_diff(df.iloc[::-1], 4).index) == ["aws", "figma", "jenkins", "kotlin"]
+
+
+# ---------------------------------------------------------------------------
+# clustering: quy tắc nhiễu (04/10)
+# ---------------------------------------------------------------------------
+
+def test_assign_noise_marks_small_clusters_and_renumbers_by_size():
+    import numpy as np
+    from src.models.clustering import NOISE_LABEL, assign_noise
+
+    raw = np.array([3] * 20 + [1] * 40 + [2] * 5 + [4] * 16)
+    out = assign_noise(raw, min_size=15)
+
+    assert set(out) == {1, 2, 3, NOISE_LABEL}
+    assert (out[raw == 1] == 1).all()          # 40 tin → cụm 1 (lớn nhất)
+    assert (out[raw == 3] == 2).all()          # 20 tin → cụm 2
+    assert (out[raw == 4] == 3).all()          # 16 tin → cụm 3
+    assert (out[raw == 2] == NOISE_LABEL).all()  # 5 tin < 15 → nhiễu
+
+
+def test_evaluate_k_validity_rule():
+    import numpy as np
+    from src.models.clustering import evaluate_k
+
+    # 3 cụm thật × 20 tin + 2 tin nhiễu (3,2% ≤ 5%) → hợp lệ
+    raw = np.array([1] * 20 + [2] * 20 + [3] * 20 + [4] * 2)
+    D = np.ones((len(raw), len(raw)))
+    for c in set(raw):
+        idx = np.where(raw == c)[0]
+        D[np.ix_(idx, idx)] = 0.2
+    np.fill_diagonal(D, 0)
+    groups = np.array(["A"] * 20 + ["B"] * 20 + ["C"] * 20 + ["A"] * 2)
+
+    res = evaluate_k(raw, D, groups)
+    assert res["valid"]
+    assert res["n_noise"] == 2
+    assert res["purity"] == 1.0                 # 3 cụm thật khớp hoàn toàn 3 nhóm
+    assert res["silhouette"] > 0.5
+
+    # chỉ 2 cụm thật → không hợp lệ
+    res2 = evaluate_k(np.array([1] * 30 + [2] * 30 + [3] * 2), D[:62, :62], groups[:62])
+    assert not res2["valid"]

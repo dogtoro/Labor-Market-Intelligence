@@ -1,45 +1,50 @@
 # Báo Cáo Phân Cụm & Purity
 
-- **K đã chọn:** 4 — silhouette cao nhất trong các k hợp lệ (cụm nhỏ nhất ≥ 15 tin), silhouette = 0.0480
-- **Số tin dùng để phân cụm:** 548; bị loại (còn < 2 kỹ năng sau khi lọc): 129
-- **Kỹ năng bị loại** (xuất hiện > 40% số tin, < 10 tin, hoặc kỹ năng mềm/công cụ quản lý): ab_testing, agile, bi, cassandra, communication, confluence, data_lake, data_pipeline, databricks, dbt, english, hadoop, japanese, jira, mariadb, nginx, numpy, redshift, rust, scala, scikit_learn, snowflake, statistics, tableau, teamwork
+- **K đã chọn:** 8 → **5 cụm thật** + 21 tin nhiễu (3.9%); silhouette = 0.0655
+- **Quy tắc chọn k (đặt trước khi xem kết quả, DECISIONS 04/10):** cụm < 15 tin coi là **nhiễu/ngoại lai** (nhãn `-1` trong `cluster_labels.csv`); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất (tính trên tin không phải nhiễu).
+- **Số tin dùng để phân cụm:** 540; bị loại (còn < 2 kỹ năng sau khi lọc): 137
+- **Kỹ năng bị loại** (xuất hiện > 40% số tin, < 10 tin, hoặc kỹ năng mềm/công cụ quản lý): agile, api, bi, cassandra, communication, confluence, databricks, dbt, english, hadoop, japanese, jira, mariadb, nginx, numpy, redshift, rust, scala, scikit_learn, snowflake, statistics, tableau, teamwork
 
 ## Kết quả các K đã thử
 
-| K | Kích thước các cụm | Silhouette | Purity | Hợp lệ (cụm nhỏ nhất ≥ 15) |
-|---|---|---|---|---|
-| 4 | 400 / 76 / 43 / 29 | 0.0480 | 0.3339 | ✅ |
-| 5 | 351 / 76 / 49 / 43 / 29 | 0.0459 | 0.3540 | ✅ |
-| 6 | 351 / 76 / 49 / 43 / 20 / 9 | 0.0430 | 0.3540 | — |
-| 7 | 336 / 76 / 49 / 43 / 20 / 15 / 9 | 0.0442 | 0.3631 | — |
-| 8 | 280 / 76 / 56 / 49 / 43 / 20 / 15 / 9 | 0.0474 | 0.3978 | — |
+| K | Cụm thật (số tin) | Tin nhiễu | Silhouette | Purity | Baseline | Hợp lệ |
+|---|---|---|---|---|---|---|
+| 4 | 467 / 60 | 13 (2.4%) | 0.0554 | 0.2410 | 0.2106 | — |
+| 5 | 467 / 34 / 26 | 13 (2.4%) | 0.0413 | 0.2581 | 0.2106 | ✅ |
+| 6 | 467 / 26 / 26 | 21 (3.9%) | 0.0382 | 0.2601 | 0.2139 | ✅ |
+| 7 | 382 / 85 / 26 / 26 | 21 (3.9%) | 0.0476 | 0.3083 | 0.2139 | ✅ |
+| 8 | 309 / 85 / 73 / 26 / 26 | 21 (3.9%) | 0.0655 | 0.3218 | 0.2139 | ✅ |
 
 ## Top 5 kỹ năng mỗi cụm
 
-- **Cụm 1:** sql (88%), python (26%), api (23%), power_bi (23%), figma (21%)
-- **Cụm 2:** aws (52%), data_governance (52%), airflow (48%), sql (41%), machine_learning (41%)
-- **Cụm 3:** llm (61%), python (57%), aws (50%), azure (39%), machine_learning (37%)
-- **Cụm 4:** api (51%), cicd (46%), git (45%), java (34%), aws (34%)
+- **Nhiễu** (21 tin): dotnet (33%), csharp (24%), microservices (24%), data_governance (19%), machine_learning (19%)
+- **Cụm 1** (309 tin): cicd (57%), git (55%), aws (47%), docker (46%), java (43%)
+- **Cụm 2** (85 tin): python (51%), llm (48%), cpp (34%), linux (34%), machine_learning (28%)
+- **Cụm 3** (73 tin): sql (95%), mssql (36%), dotnet (22%), python (22%), postgresql (21%)
+- **Cụm 4** (26 tin): aws (73%), azure (46%), etl (27%), kubernetes (27%), airflow (23%)
+- **Cụm 5** (26 tin): test_automation (100%), cicd (54%), sql (31%), git (23%), manual_testing (23%)
 
-## Đánh giá
-- **Purity:** 0.3339
-- **Baseline Purity:** 0.2080
-- **Weighted F-measure:** 0.3229
+## Đánh giá (trên tin không phải nhiễu)
+- **Purity:** 0.3218
+- **Baseline Purity:** 0.2139
+- **Weighted F-measure:** 0.3425
 
 ## Nhận xét & hạn chế
 
-- **Cấu trúc cụm yếu:** silhouette = 0.048 (gần 0) — tổ hợp kỹ năng trên ITviec **không tách thành các nhóm nghề rõ ràng**. Đây là kết quả, không phải lỗi; mọi phương án linkage/k đã thử đều cho silhouette ~0,04–0,07 (`docs/DECISIONS.md`).
-- **Một cụm "chung" chiếm 400/548 tin (73%)** (cụm 4: api (51%), cicd (46%), git (45%), java (34%), aws (34%)) và trộn lẫn mọi nhóm nghề (xem crosstab).
-- **Các cụm nhỏ có đặc trưng rõ hơn:** cụm 1 (43 tin): sql (88%), python (26%); cụm 2 (29 tin): aws (52%), data_governance (52%); cụm 3 (76 tin): llm (61%), python (57%).
-- **Purity 0.334 so với baseline 0.208** (baseline = gom tất cả vào 1 cụm, tức tỷ lệ nhóm nghề đông nhất): cụm kỹ năng khớp nhóm nghề tốt hơn baseline nhưng còn xa mức tách bạch; F-measure 0.323.
-- **Phạm vi:** chỉ 548/688 tin (80%) được phân cụm; 140 tin (20%) bị loại vì không bắt được kỹ năng nào hoặc còn < 2 kỹ năng sau khi bỏ kỹ năng mềm/hiếm/quá phổ biến.
+- **Cấu trúc cụm yếu:** silhouette = 0.066 (gần 0) — tổ hợp kỹ năng trên ITviec **không tách thành các nhóm nghề rõ ràng**. Đây là kết quả, không phải lỗi.
+- **Kết quả nhạy với từ điển:** sau khi bổ sung dạng số nhiều (vd. "APIs", 04/10), `api` vượt ngưỡng 40% và bị loại; quy tắc cũ (mọi cụm ≥ 15 tin) không còn k nào hợp lệ vì luôn có vài cụm 2–13 tin. Đổi sang quy tắc nhiễu (`docs/DECISIONS.md` 04/10) — đây cũng là bằng chứng phân cụm không ổn định.
+- **Một cụm "chung" chiếm 309/519 tin không phải nhiễu (60%)** (cụm 1: cicd (57%), git (55%), aws (47%), docker (46%), java (43%)) và trộn lẫn mọi nhóm nghề (xem crosstab).
+- **Các cụm nhỏ có đặc trưng rõ hơn:** cụm 2 (85 tin): python (51%), llm (48%); cụm 3 (73 tin): sql (95%), mssql (36%); cụm 4 (26 tin): aws (73%), azure (46%); cụm 5 (26 tin): test_automation (100%), cicd (54%).
+- **Purity 0.322 so với baseline 0.214** (baseline = gom tất cả vào 1 cụm, tức tỷ lệ nhóm nghề đông nhất): cụm kỹ năng khớp nhóm nghề tốt hơn baseline nhưng còn xa mức tách bạch; F-measure 0.343.
+- **Phạm vi:** 540/688 tin (78%) được phân cụm, trong đó 21 tin là nhiễu; 148 tin (22%) bị loại vì không bắt được kỹ năng nào hoặc còn < 2 kỹ năng sau khi bỏ kỹ năng mềm/hiếm/quá phổ biến.
 - Nhóm nghề so sánh lấy từ 72 giá trị "Job Expertise" gộp thành 10 nhóm (`src/models/expertise_groups.json`, ASSUMPTIONS A16 — chờ review).
 
-## Crosstab (Cluster x Expertise Group)
+## Crosstab (Cluster x Expertise Group, không gồm nhiễu)
 
 | Cluster | Architect | BA/PM/Manager | Backend | Data/AI | DevOps/Cloud/System | Frontend/Fullstack | Khác | Mobile | QA/QC | Security |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 0 | 22 | 3 | 12 | 2 | 0 | 2 | 0 | 0 | 2 |
-| 2 | 1 | 4 | 3 | 18 | 1 | 0 | 0 | 0 | 2 | 0 |
-| 3 | 3 | 7 | 3 | 38 | 10 | 3 | 3 | 2 | 1 | 6 |
-| 4 | 22 | 27 | 105 | 15 | 51 | 85 | 17 | 16 | 51 | 11 |
+| 1 | 15 | 12 | 84 | 25 | 42 | 73 | 4 | 13 | 30 | 11 |
+| 2 | 2 | 3 | 7 | 32 | 15 | 2 | 17 | 1 | 1 | 5 |
+| 3 | 3 | 24 | 17 | 14 | 2 | 7 | 1 | 1 | 2 | 2 |
+| 4 | 4 | 5 | 3 | 9 | 4 | 0 | 0 | 0 | 0 | 1 |
+| 5 | 1 | 3 | 0 | 0 | 0 | 2 | 1 | 1 | 18 | 0 |

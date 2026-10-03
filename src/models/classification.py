@@ -218,6 +218,16 @@ def run_classification():
     lo, hi = bins[1], bins[2]
     cm_df = pd.DataFrame(cm, index=[f"Thật: {c}" for c in CLASSES], columns=[f"Dự đoán: {c}" for c in CLASSES])
     imp_df = importance.round(3).to_frame("Importance")
+    level_of = X[LEVEL_COLUMNS].idxmax(axis=1).str.replace("lvl_", "", regex=False)
+    level_mix = pd.crosstab(level_of, y, normalize="index").reindex(columns=CLASSES).fillna(0)
+    level_n = level_of.value_counts()
+    level_df = (level_mix * 100).round(0).astype(int).astype(str) + "%"
+    level_df.insert(0, "Số tin", level_n.reindex(level_df.index))
+    level_df["Lớp đông nhất"] = level_mix.idxmax(axis=1)
+    top_levels = ", ".join(f"{lvl} ({level_mix.loc[lvl].max():.0%} {level_mix.loc[lvl].idxmax()})"
+                           for lvl in level_mix.index if lvl != "Intern/Junior")
+    small_leaves = int((model.tree_.n_node_samples[model.tree_.children_left == -1] < 10).sum())
+    skill_splits = ", ".join(f"`{c}`" for c in importance.index if not c.startswith(("lvl_", "loc_")))
     breakdown = intern_junior_breakdown(jobs_df)
     n_ij = int(breakdown["Số tin"].sum())
     n_intern = int(breakdown["Số tin"].get("Intern", 0))
@@ -272,12 +282,18 @@ def run_classification():
         "Vì vậy nhánh `lvl_Intern/Junior` của cây (toàn bộ dự đoán Low) phản ánh \"thực tập sinh có thu nhập thấp\" — "
         "**không** được diễn giải thành \"Junior lương thấp\".",
         "",
+        "### Phân bố lớp lương theo cấp bậc",
+        "",
+        *_md_table(level_df, "Cấp bậc"),
+        "",
         "## Nhận xét",
         "",
         f"- Accuracy out-of-fold {acc:.1%}, cận dưới CI {ci_low:.1%} vẫn cao hơn baseline {baseline:.1%} → mô hình học được tín hiệu thật.",
-        "- Cấp bậc (suy từ tiêu đề) là feature quan trọng nhất. Tách quan trọng nhất là `lvl_Intern/Junior`, "
-        "nhưng nhóm này chủ yếu là thực tập sinh (phụ cấp) nên kết luận gần như hiển nhiên; tín hiệu có giá trị hơn là "
-        "Senior/Lead/Manager nghiêng về High và việc **không suy được** cấp bậc (`lvl_Unknown`) nghiêng về Low.",
+        "- Cấp bậc (suy từ tiêu đề) là nhóm feature quan trọng nhất. Tách quan trọng nhất là `lvl_Intern/Junior`, "
+        "nhưng nhóm này chủ yếu là thực tập sinh (phụ cấp) nên kết luận gần như hiển nhiên. Các cấp bậc còn lại "
+        f"(lớp đông nhất, xem bảng trên): {top_levels}.",
+        f"- Cây có {model.get_n_leaves()} lá, trong đó {small_leaves} lá có < 10 tin; các nhánh tách theo kỹ năng "
+        f"({skill_splits or 'không có'}) dựa trên rất ít tin nên **không** nên diễn giải thành \"kỹ năng X → lương Y\".",
         "- **Hạn chế:** phụ cấp thực tập nằm chung với lương trong dữ liệu (không tách được ở bước làm sạch); "
         "phương án loại tin thực tập khỏi mô hình lương sẽ đổi N = 172 và tertile đã chốt ở Mốc 2 nên không áp dụng.",
         "- Recall từng lớp: " + ", ".join(f"{c} {cm[i, i]}/{cm[i].sum()} ({cm[i, i] / cm[i].sum():.0%})" for i, c in enumerate(CLASSES))
