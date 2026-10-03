@@ -43,7 +43,7 @@ Kiểm định Chi-Square test trên toàn bộ bảng chéo: p-value = 6.0407e-
 
 | Cấp bậc | Có lương | Có lương (%) | Không lương | Không lương (%) | Chênh lệch (%) |
 |---|---|---|---|---|---|
-| Junior | 17 | 9.9% | 37 | 7.2% | +2.7% |
+| Intern/Junior | 17 | 9.9% | 37 | 7.2% | +2.7% |
 | Lead | 12 | 7.0% | 54 | 10.5% | -3.5% |
 | Manager | 18 | 10.5% | 42 | 8.1% | +2.3% |
 | Middle | 11 | 6.4% | 15 | 2.9% | +3.5% |

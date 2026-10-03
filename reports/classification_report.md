@@ -45,14 +45,27 @@ Vòng ngoài 5 fold đánh giá, vòng trong 3 fold chọn `max_depth ∈ {3,4,5
 
 | Feature | Importance |
 |---|---|
-| lvl_Junior | 0.455 |
+| lvl_Intern/Junior | 0.455 |
 | lvl_Middle | 0.224 |
 | lvl_Unknown | 0.202 |
 | cpp | 0.119 |
 
+### Nhóm cấp bậc `Intern/Junior`
+
+Intern, Fresher và Junior được gộp thành 1 nhóm (`LEVEL_GROUPS`) vì Junior thật rất ít. Trong các tin có lương, thành phần nhóm này:
+
+| Level gốc | Số tin | Trung vị (triệu) | Thấp nhất | Cao nhất |
+|---|---|---|---|---|
+| Intern | 14 | 4.1 | 2.3 | 9.0 |
+| Fresher | 1 | 3.6 | 3.6 | 3.6 |
+| Junior | 2 | 15.7 | 12.0 | 19.3 |
+
+→ **14/17 tin là thực tập sinh**; con số "lương" của họ là **phụ cấp thực tập**, không phải lương. Vì vậy nhánh `lvl_Intern/Junior` của cây (toàn bộ dự đoán Low) phản ánh "thực tập sinh có thu nhập thấp" — **không** được diễn giải thành "Junior lương thấp".
+
 ## Nhận xét
 
 - Accuracy out-of-fold 52.9%, cận dưới CI 45.3% vẫn cao hơn baseline 34.9% → mô hình học được tín hiệu thật.
-- Cấp bậc (suy từ tiêu đề) là feature quan trọng nhất; việc **không suy được** cấp bậc (`lvl_Unknown`) cũng mang thông tin.
+- Cấp bậc (suy từ tiêu đề) là feature quan trọng nhất. Tách quan trọng nhất là `lvl_Intern/Junior`, nhưng nhóm này chủ yếu là thực tập sinh (phụ cấp) nên kết luận gần như hiển nhiên; tín hiệu có giá trị hơn là Senior/Lead/Manager nghiêng về High và việc **không suy được** cấp bậc (`lvl_Unknown`) nghiêng về Low.
+- **Hạn chế:** phụ cấp thực tập nằm chung với lương trong dữ liệu (không tách được ở bước làm sạch); phương án loại tin thực tập khỏi mô hình lương sẽ đổi N = 172 và tertile đã chốt ở Mốc 2 nên không áp dụng.
 - Recall từng lớp: Low 43/60 (72%), Mid 13/55 (24%), High 35/57 (61%) — lớp giữa khó tách nhất, thường bị nhầm sang hai lớp bên cạnh.
 - Mẫu nhỏ (172 tin) nên CI rộng; kết luận chỉ áp dụng cho tin có công bố lương (25% tổng số tin, phần lớn ghi USD).

@@ -125,7 +125,7 @@ def test_clean_level_feature():
         "Lead", "Principal", "Manager", "Head", "Director", None,
     ]})
     assert clean_level_feature(df).tolist() == [
-        "Junior", "Junior", "Junior", "Middle", "Senior",
+        "Intern/Junior", "Intern/Junior", "Intern/Junior", "Middle", "Senior",
         "Lead", "Lead", "Manager", "Manager", "Manager", "Unknown",
     ]
 

@@ -128,8 +128,8 @@ def run_bias_analysis():
     fig, ax = plt.subplots(figsize=(10, 6))
     colors = ['green' if x > 0 else 'red' for x in top_plot['Chênh lệch (%)']]
     ax.barh(top_plot.index, top_plot['Chênh lệch (%)'] * 100, color=colors)
-    ax.set_xlabel('Chênh lệch % (Có lương - Không lương)')
-    ax.set_title(f'Top 10 kỹ năng chênh lệch nhiều nhất ({sig_count} kỹ năng có adj p < 0.05)')
+    ax.set_xlabel('Difference in share of jobs (pp): with salary − without salary')
+    ax.set_title(f'Top 10 skills by difference: salary disclosed vs not ({sig_count} with BH-adjusted p < 0.05)')
     ax.grid(axis='x', linestyle='--', alpha=0.7)
     plt.tight_layout()
     
@@ -191,10 +191,11 @@ def run_bias_analysis():
     fig, ax = plt.subplots(figsize=(8, 5))
     x = np.arange(len(level_pct))
     width = 0.35
-    ax.bar(x - width/2, level_pct['Có lương'], width, label='Có lương')
-    ax.bar(x + width/2, level_pct['Không lương'], width, label='Không lương')
-    ax.set_ylabel('% trong nhóm')
-    ax.set_title('Phân bố Cấp Bậc: Có Lương vs Không Lương')
+    ax.bar(x - width/2, level_pct['Có lương'], width, label=f'Salary disclosed (n={n_has})')
+    ax.bar(x + width/2, level_pct['Không lương'], width, label=f'Salary not disclosed (n={n_no})')
+    ax.set_ylabel('% of jobs in group')
+    ax.set_xlabel('Seniority level (inferred from job title)')
+    ax.set_title(f'Seniority distribution: salary disclosed vs not (chi-square p = {p_level:.3f})')
     ax.set_xticks(x)
     ax.set_xticklabels(level_pct.index)
     ax.legend()

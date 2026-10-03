@@ -195,6 +195,30 @@ def evaluate_clusters(cluster_df, jobs_df, stats):
         f.write(f"- **Purity:** {purity:.4f}\n")
         f.write(f"- **Baseline Purity:** {baseline_purity:.4f}\n")
         f.write(f"- **Weighted F-measure:** {overall_f:.4f}\n\n")
+
+        # Nhận xét & hạn chế — sinh từ số liệu để slide dùng trực tiếp
+        n_total = jobs_df['job_id'].nunique()
+        n_used = len(cluster_df)
+        sizes = cluster_df['cluster'].value_counts()
+        big_id, big_n = sizes.idxmax(), int(sizes.max())
+        small = [c for c in sorted(stats['top5']) if c != big_id]
+        f.write("## Nhận xét & hạn chế\n\n")
+        f.write(f"- **Cấu trúc cụm yếu:** silhouette = {stats['best_score']:.3f} (gần 0) — tổ hợp kỹ năng trên ITviec "
+                "**không tách thành các nhóm nghề rõ ràng**. Đây là kết quả, không phải lỗi; mọi phương án linkage/k đã thử "
+                "đều cho silhouette ~0,04–0,07 (`docs/DECISIONS.md`).\n")
+        f.write(f"- **Một cụm \"chung\" chiếm {big_n}/{n_used} tin ({big_n / n_used:.0%})** (cụm {big_id}: "
+                f"{stats['top5'][big_id]}) và trộn lẫn mọi nhóm nghề (xem crosstab).\n")
+        f.write(f"- **Các cụm nhỏ có đặc trưng rõ hơn:** "
+                + "; ".join(f"cụm {c} ({int(sizes[c])} tin): {stats['top5'][c].split(', ')[0]}, {stats['top5'][c].split(', ')[1]}" for c in small)
+                + ".\n")
+        f.write(f"- **Purity {purity:.3f} so với baseline {baseline_purity:.3f}** (baseline = gom tất cả vào 1 cụm, "
+                f"tức tỷ lệ nhóm nghề đông nhất): cụm kỹ năng khớp nhóm nghề tốt hơn baseline nhưng còn xa mức tách bạch; "
+                f"F-measure {overall_f:.3f}.\n")
+        f.write(f"- **Phạm vi:** chỉ {n_used}/{n_total} tin ({n_used / n_total:.0%}) được phân cụm; "
+                f"{n_total - n_used} tin ({(n_total - n_used) / n_total:.0%}) bị loại vì không bắt được kỹ năng nào "
+                f"hoặc còn < {MIN_SKILLS_PER_JOB} kỹ năng sau khi bỏ kỹ năng mềm/hiếm/quá phổ biến.\n")
+        f.write("- Nhóm nghề so sánh lấy từ 72 giá trị \"Job Expertise\" gộp thành 10 nhóm (`src/models/expertise_groups.json`, "
+                "ASSUMPTIONS A16 — chờ review).\n\n")
         
         f.write("## Crosstab (Cluster x Expertise Group)\n\n")
         headers = ["Cluster"] + list(crosstab.columns)

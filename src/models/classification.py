@@ -123,6 +123,40 @@ def _md_table(df: pd.DataFrame, index_name: str) -> list[str]:
     return lines
 
 
+def plot_tree_ordered(model: DecisionTreeClassifier, X: pd.DataFrame, y: pd.Series, path: Path, title: str):
+    """Vẽ cây với `value` theo thứ tự Low, Mid, High (sklearn mặc định sắp lớp theo chữ cái: High, Low, Mid).
+
+    Fit lại một cây cùng tham số trên nhãn đánh số "1_Low" < "2_Mid" < "3_High". Gini và cách chọn nhánh
+    không phụ thuộc tên lớp nên cấu trúc cây giống hệt — có assert để chắc chắn.
+    """
+    order = {c: f"{i}_{c}" for i, c in enumerate(CLASSES, start=1)}
+    twin = DecisionTreeClassifier(**model.get_params()).fit(X, y.map(order))
+    assert (twin.tree_.feature == model.tree_.feature).all() and np.allclose(twin.tree_.threshold, model.tree_.threshold)
+
+    fig = plt.figure(figsize=(15, 10))
+    plot_tree(twin, feature_names=list(X.columns), class_names=CLASSES, filled=True, rounded=True, fontsize=10)
+    plt.title(title)
+    fig.text(0.5, 0.01,
+             "value = number of jobs [Low, Mid, High]. Left branch = condition true "
+             "(feature <= 0.5, i.e. the job does NOT have it); right branch = job has it.",
+             ha="center", fontsize=11)
+    plt.tight_layout(rect=(0, 0.04, 1, 1))
+    plt.savefig(path)
+    plt.close(fig)
+
+
+def intern_junior_breakdown(jobs_df: pd.DataFrame) -> pd.DataFrame:
+    """Thành phần nhóm Intern/Junior trong các tin có lương: số tin và lương đại diện theo level gốc."""
+    jobs = jobs_df[jobs_df["salary_status"] != "undisclosed"].copy()
+    jobs["salary_mid"] = calculate_salary_mid(jobs)
+    members = [lvl for lvl, grp in LEVEL_GROUPS.items() if grp == "Intern/Junior"]
+    sub = jobs[jobs["level"].isin(members)]
+    out = sub.groupby("level")["salary_mid"].agg(["count", "median", "min", "max"]).reindex(members).dropna(how="all")
+    out.columns = ["Số tin", "Trung vị (triệu)", "Thấp nhất", "Cao nhất"]
+    out["Số tin"] = out["Số tin"].astype(int)
+    return out.round(1)
+
+
 def run_classification():
     jobs_df, skills_df = load_and_verify_data()
     X, y, bins = build_dataset(jobs_df, skills_df)
@@ -164,13 +198,7 @@ def run_classification():
     importance = pd.Series(model.feature_importances_, index=X.columns)
     importance = importance[importance > 0].sort_values(ascending=False)
 
-    plt.figure(figsize=(15, 10))
-    plot_tree(model, feature_names=list(X.columns), class_names=list(model.classes_),
-              filled=True, rounded=True, fontsize=10)
-    plt.title(f"Decision Tree (max_depth={params[0]}, min_samples_leaf={params[1]})")
-    plt.tight_layout()
-    plt.savefig(FIG_DIR / "tree_viz.png")
-    plt.close()
+    plot_tree_ordered(model, X, y, FIG_DIR / "tree_viz.png", title=f"Decision Tree (max_depth={params[0]}, min_samples_leaf={params[1]})")
 
     # Lưu model + metadata (pickle chỉ dùng được với đúng version sklearn)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -190,6 +218,9 @@ def run_classification():
     lo, hi = bins[1], bins[2]
     cm_df = pd.DataFrame(cm, index=[f"Thật: {c}" for c in CLASSES], columns=[f"Dự đoán: {c}" for c in CLASSES])
     imp_df = importance.round(3).to_frame("Importance")
+    breakdown = intern_junior_breakdown(jobs_df)
+    n_ij = int(breakdown["Số tin"].sum())
+    n_intern = int(breakdown["Số tin"].get("Intern", 0))
     fold_counts = Counter(zip(folds["max_depth"], folds["min_samples_leaf"]))
     lines = [
         "# Báo cáo phân lớp lương (Decision Tree)",
@@ -230,10 +261,25 @@ def run_classification():
         "",
         *_md_table(imp_df, "Feature"),
         "",
+        "### Nhóm cấp bậc `Intern/Junior`",
+        "",
+        "Intern, Fresher và Junior được gộp thành 1 nhóm (`LEVEL_GROUPS`) vì Junior thật rất ít. "
+        "Trong các tin có lương, thành phần nhóm này:",
+        "",
+        *_md_table(breakdown, "Level gốc"),
+        "",
+        f"→ **{n_intern}/{n_ij} tin là thực tập sinh**; con số \"lương\" của họ là **phụ cấp thực tập**, không phải lương. "
+        "Vì vậy nhánh `lvl_Intern/Junior` của cây (toàn bộ dự đoán Low) phản ánh \"thực tập sinh có thu nhập thấp\" — "
+        "**không** được diễn giải thành \"Junior lương thấp\".",
+        "",
         "## Nhận xét",
         "",
         f"- Accuracy out-of-fold {acc:.1%}, cận dưới CI {ci_low:.1%} vẫn cao hơn baseline {baseline:.1%} → mô hình học được tín hiệu thật.",
-        "- Cấp bậc (suy từ tiêu đề) là feature quan trọng nhất; việc **không suy được** cấp bậc (`lvl_Unknown`) cũng mang thông tin.",
+        "- Cấp bậc (suy từ tiêu đề) là feature quan trọng nhất. Tách quan trọng nhất là `lvl_Intern/Junior`, "
+        "nhưng nhóm này chủ yếu là thực tập sinh (phụ cấp) nên kết luận gần như hiển nhiên; tín hiệu có giá trị hơn là "
+        "Senior/Lead/Manager nghiêng về High và việc **không suy được** cấp bậc (`lvl_Unknown`) nghiêng về Low.",
+        "- **Hạn chế:** phụ cấp thực tập nằm chung với lương trong dữ liệu (không tách được ở bước làm sạch); "
+        "phương án loại tin thực tập khỏi mô hình lương sẽ đổi N = 172 và tertile đã chốt ở Mốc 2 nên không áp dụng.",
         "- Recall từng lớp: " + ", ".join(f"{c} {cm[i, i]}/{cm[i].sum()} ({cm[i, i] / cm[i].sum():.0%})" for i, c in enumerate(CLASSES))
         + " — lớp giữa khó tách nhất, thường bị nhầm sang hai lớp bên cạnh.",
         f"- Mẫu nhỏ ({len(X)} tin) nên CI rộng; kết luận chỉ áp dụng cho tin có công bố lương (25% tổng số tin, phần lớn ghi USD).",

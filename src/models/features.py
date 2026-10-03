@@ -20,9 +20,11 @@ LOCATION_COLUMNS = {
 
 # Nhãn do src/parse/parser.py::infer_level sinh ra → nhóm dùng cho model
 LEVEL_GROUPS = {
-    "Intern": "Junior",
-    "Fresher": "Junior",
-    "Junior": "Junior",
+    # Intern/Fresher gộp với Junior vì quá ít tin (Junior thật chỉ 15/688). Lưu ý: trong 172 tin có lương,
+    # nhóm này chủ yếu là thực tập sinh (phụ cấp, không phải lương) — xem classification_report.md
+    "Intern": "Intern/Junior",
+    "Fresher": "Intern/Junior",
+    "Junior": "Intern/Junior",
     "Middle": "Middle",
     "Senior": "Senior",
     "Lead": "Lead",
@@ -110,7 +112,7 @@ def extract_location_flags(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_level_feature(df: pd.DataFrame) -> pd.Series:
-    """Gộp level: Intern/Fresher/Junior → Junior; Lead/Principal → Lead;
+    """Gộp level: Intern/Fresher/Junior → Intern/Junior; Lead/Principal → Lead;
     Manager/Head/Director → Manager; thiếu → Unknown.
 
     Raises:
