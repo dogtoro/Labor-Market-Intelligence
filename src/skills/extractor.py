@@ -29,16 +29,34 @@ def load_skill_dict(path: str | Path | None = None) -> dict[str, list[str]]:
         return json.load(f)
 
 
+# Alias mơ hồ (trùng từ tiếng Anh thông thường) → chỉ khớp đúng chữ hoa/thường.
+# Giá trị là lookahead loại trừ thêm (rỗng nếu không cần), vd. "Go" không khớp "Go-live", "Go to".
+CASE_SENSITIVE_ALIASES = {
+    "React": "",
+    "Spring": "",
+    "Excel": "",
+    "Go": r"(?![- ](?:live|to)\b)",
+}
+
+
 def _build_patterns(skill_dict: dict[str, list[str]]) -> dict[str, re.Pattern]:
     """Build compiled regex patterns for each skill.
 
-    Each pattern matches any alias as a whole word (case-insensitive).
+    Each pattern matches any alias as a whole word (case-insensitive by default).
+    Aliases listed in CASE_SENSITIVE_ALIASES are matched case-sensitively
+    via ``(?-i:...)`` to avoid false positives on common English words,
+    followed by an optional exclusion lookahead.
     """
     patterns = {}
     for skill, aliases in skill_dict.items():
-        # Escape special regex characters, join with |
-        escaped = [re.escape(a) for a in aliases]
-        pat = "|".join(escaped)
+        parts = []
+        for a in aliases:
+            escaped = re.escape(a)
+            if a in CASE_SENSITIVE_ALIASES:
+                parts.append(f"(?-i:{escaped}){CASE_SENSITIVE_ALIASES[a]}")
+            else:
+                parts.append(escaped)
+        pat = "|".join(parts)
         patterns[skill] = re.compile(rf"(?<![\w+#.])(?:{pat})(?![\w+#])", re.IGNORECASE)
     return patterns
 

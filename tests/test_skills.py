@@ -16,7 +16,9 @@ def skill_dict():
         "power_bi": ["Power BI", "PowerBI", "Power-BI"],
         "docker": ["Docker", "docker"],
         "aws": ["AWS", "Amazon Web Services"],
-        "react": ["ReactJS", "React.js"],
+        "react": ["React", "ReactJS", "React.js"],
+        "spring": ["Spring", "Spring Boot", "SpringBoot"],
+        "excel": ["Excel", "Microsoft Excel", "MS Excel"],
         "kubernetes": ["Kubernetes", "K8s", "k8s"],
         "computer_vision": ["Computer Vision", "OpenCV"],
     }
@@ -54,18 +56,19 @@ class TestExtractSkills:
         assert result["docker"] == 1
 
     def test_no_match(self, patterns):
-        text = "Tìm kiếm nhân viên kế toán có kinh nghiệm Excel."
+        text = "Tìm kiếm nhân viên kế toán có kinh nghiệm lập kế hoạch."
         result = extract_skills(text, patterns)
         assert result["python"] == 0
         assert result["sql"] == 0
 
     def test_multiple_skills(self, patterns):
-        text = "Cần biết Python, SQL, Docker, AWS."
+        text = "Cần biết Python, SQL, Docker, AWS, React."
         result = extract_skills(text, patterns)
         assert result["python"] == 1
         assert result["sql"] == 1
         assert result["docker"] == 1
         assert result["aws"] == 1
+        assert result["react"] == 1
 
     def test_amazon_web_services_alias(self, patterns):
         text = "Triển khai trên Amazon Web Services."
@@ -93,6 +96,29 @@ class TestExtractSkills:
         text4 = "candidate must be in CV review"
         result4 = extract_skills(text4, patterns)
         assert result4["computer_vision"] == 0
+
+    def test_react_case_sensitive(self, patterns):
+        """React (viết hoa) là framework, react (viết thường) là động từ."""
+        # Phải bắt được
+        assert extract_skills("React Native", patterns)["react"] == 1
+        assert extract_skills("Experience with React and Redux", patterns)["react"] == 1
+        assert extract_skills("React/Next.js", patterns)["react"] == 1
+        assert extract_skills("reactjs", patterns)["react"] == 1  # alias ReactJS, case-insensitive
+
+        # Không được bắt nhầm
+        assert extract_skills("users react quickly", patterns)["react"] == 0
+
+    def test_spring_case_sensitive(self, patterns):
+        """Spring (viết hoa) là framework, spring (viết thường) là từ thường."""
+        assert extract_skills("Spring Framework", patterns)["spring"] == 1
+        assert extract_skills("Spring Boot microservices", patterns)["spring"] == 1
+        assert extract_skills("spring water is refreshing", patterns)["spring"] == 0
+
+    def test_excel_case_sensitive(self, patterns):
+        """Excel (viết hoa) là phần mềm, excel (viết thường) là động từ."""
+        assert extract_skills("Proficient in Excel", patterns)["excel"] == 1
+        assert extract_skills("MS Excel required", patterns)["excel"] == 1
+        assert extract_skills("they excel at programming", patterns)["excel"] == 0
 
 
 class TestBuildSkillMatrix:
@@ -131,3 +157,26 @@ class TestBuildSkillMatrix:
         assert isinstance(d, dict)
         assert "python" in d
         assert isinstance(d["python"], list)
+
+
+class TestRealDictionaryAliases:
+    """Alias bổ sung sau kiểm chứng A7 — chạy trên từ điển thật."""
+
+    @pytest.fixture(scope="class")
+    def real_patterns(self):
+        return _build_patterns(load_skill_dict())
+
+    def test_go_case_sensitive_with_exclusions(self, real_patterns):
+        assert extract_skills("Python, Bash, Go for automation", real_patterns)["go"] == 1
+        assert extract_skills("Java/Go services", real_patterns)["go"] == 1
+        assert extract_skills("post Go-live support", real_patterns)["go"] == 0
+        assert extract_skills("Go to market strategy", real_patterns)["go"] == 0
+        assert extract_skills("ready to go now", real_patterns)["go"] == 0
+
+    def test_testing_skills(self, real_patterns):
+        assert extract_skills("hands-on manual testing", real_patterns)["manual_testing"] == 1
+        assert extract_skills("Playwright, Cypress, or Selenium", real_patterns)["test_automation"] == 1
+
+    def test_soft_skill_aliases(self, real_patterns):
+        assert extract_skills("a reliable team player", real_patterns)["teamwork"] == 1
+        assert extract_skills("Able to communicate clearly", real_patterns)["communication"] == 1

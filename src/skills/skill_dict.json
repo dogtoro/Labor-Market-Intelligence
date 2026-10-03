@@ -28,7 +28,8 @@
     ],
     "go": [
         "Golang",
-        "Go lang"
+        "Go lang",
+        "Go"
     ],
     "rust": [
         "Rust"
@@ -52,6 +53,7 @@
         "Kotlin"
     ],
     "react": [
+        "React",
         "ReactJS",
         "React.js"
     ],
@@ -66,7 +68,8 @@
     ],
     "nodejs": [
         "Node.js",
-        "NodeJS"
+        "NodeJS",
+        "Node JS"
     ],
     "django": [
         "Django"
@@ -78,6 +81,7 @@
         "FastAPI"
     ],
     "spring": [
+        "Spring",
         "Spring Boot",
         "SpringBoot"
     ],
@@ -250,6 +254,7 @@
         "Grafana"
     ],
     "excel": [
+        "Excel",
         "Microsoft Excel",
         "MS Excel"
     ],
@@ -320,7 +325,8 @@
     ],
     "bash": [
         "Bash",
-        "Shell Script"
+        "Shell Script",
+        "Shell scripting"
     ],
     "data_modeling": [
         "Data Modeling",
@@ -353,11 +359,17 @@
         "Figma"
     ],
     "communication": [
-        "Giao tiếp"
+        "Giao tiếp",
+        "Communication skills",
+        "Communication skill",
+        "Communicate"
     ],
     "teamwork": [
         "Teamwork",
-        "Làm việc nhóm"
+        "Làm việc nhóm",
+        "Team player",
+        "Team spirit",
+        "Team working"
     ],
     "english": [
         "English",
@@ -383,7 +395,8 @@
         "Large Language Model",
         "GPT",
         "ChatGPT",
-        "Gemini"
+        "Gemini",
+        "LLMs"
     ],
     "generative_ai": [
         "Generative AI",
@@ -429,5 +442,33 @@
     "nifi": [
         "NiFi",
         "Apache NiFi"
+    ],
+    "prometheus": [
+        "Prometheus"
+    ],
+    "nginx": [
+        "Nginx"
+    ],
+    "mariadb": [
+        "MariaDB"
+    ],
+    "nosql": [
+        "NoSQL"
+    ],
+    "rabbitmq": [
+        "RabbitMQ"
+    ],
+    "manual_testing": [
+        "Manual testing",
+        "Manual test"
+    ],
+    "test_automation": [
+        "Test automation",
+        "Automation test",
+        "Automation testing",
+        "Automated testing",
+        "Selenium",
+        "Cypress",
+        "Playwright"
     ]
 }

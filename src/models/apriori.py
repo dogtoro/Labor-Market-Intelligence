@@ -80,6 +80,65 @@ def evaluate_rules_on_test(top_rules: pd.DataFrame, test_df: pd.DataFrame) -> di
         }
     return results
 
+DATA_SKILLS = {
+    'python', 'sql', 'spark', 'airflow', 'etl', 'data_pipeline', 'pandas', 'numpy',
+    'kafka', 'dbt', 'hadoop', 'databricks', 'snowflake', 'bigquery', 'redshift',
+    'data_warehouse', 'data_lake', 'data_modeling', 'power_bi', 'tableau',
+    'machine_learning', 'deep_learning', 'statistics',
+}
+
+def dedup_by_itemset(rules: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
+    """Sort by lift and keep only the best rule for each antecedents ∪ consequents itemset."""
+    sorted_rules = rules.sort_values('lift', ascending=False)
+    kept = []
+    seen = set()
+    for idx, row in sorted_rules.iterrows():
+        union_set = frozenset(row['antecedents']) | frozenset(row['consequents'])
+        if union_set not in seen:
+            seen.add(union_set)
+            kept.append(idx)
+        if len(kept) == top_n:
+            break
+    return sorted_rules.loc[kept]
+
+def filter_rules_with_skills(rules: pd.DataFrame, skills: set) -> pd.DataFrame:
+    """Keep rules that contain at least one of the given skills."""
+    if rules.empty:
+        return rules
+    mask = rules.apply(
+        lambda r: bool((set(r['antecedents']) | set(r['consequents'])) & skills), axis=1
+    )
+    return rules[mask]
+
+def mine_data_rules(
+    train_df: pd.DataFrame,
+    min_supports: list[float] = [0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03],
+    min_lift: float = 1.2,
+    min_confidence: float = 0.5,
+    skills: set = DATA_SKILLS,
+    min_rules: int = 10,
+):
+    """Choose min_support by the number of DATA rules (not total rules).
+
+    Tries supports from high to low and keeps the first one yielding at least
+    ``min_rules`` rules that contain a data skill. Falls back to the support
+    with the most data rules. Returns (data_rules, used_support, counts).
+    """
+    counts = {}
+    by_supp = {}
+    for ms in min_supports:
+        rules, _ = run_apriori(train_df, min_supports=[ms], min_lift=min_lift, min_confidence=min_confidence)
+        data = filter_rules_with_skills(rules, skills)
+        counts[ms] = len(data)
+        by_supp[ms] = data
+        if len(data) >= min_rules:
+            return data, ms, counts
+
+    if not counts or max(counts.values()) == 0:
+        return pd.DataFrame(), None, counts
+    best_ms = max(counts, key=counts.get)
+    return by_supp[best_ms], best_ms, counts
+
 def format_itemset(frozen_set):
     return ", ".join(list(frozen_set))
 
@@ -142,25 +201,10 @@ def main():
     if train_rules.empty:
         eval_lines.append("Không tìm thấy luật kết hợp nào trên tập Train.")
     else:
-        # Sort and remove symmetric rules
-        sorted_rules = train_rules.sort_values('lift', ascending=False)
-        unique_rules = []
-        seen_pairs = set()
-        
-        for idx, row in sorted_rules.iterrows():
-            ant = row['antecedents']
-            con = row['consequents']
-            pair = frozenset([ant, con])
-            if pair not in seen_pairs:
-                seen_pairs.add(pair)
-                unique_rules.append(idx)
-            if len(unique_rules) == 10:
-                break
-                
-        top_rules = sorted_rules.loc[unique_rules]
+        top_rules = dedup_by_itemset(train_rules, top_n=10)
         test_results = evaluate_rules_on_test(top_rules, test_df)
-        
-        eval_lines.append("## Top 10 luật kết hợp (theo Lift, đã bỏ luật đối xứng)")
+
+        eval_lines.append("## Top 10 luật kết hợp (theo Lift, mỗi tập kỹ năng chỉ giữ 1 luật)")
         eval_lines.append("| Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |")
         eval_lines.append("|-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|")
         
@@ -177,7 +221,7 @@ def main():
             test_conf = res['test_confidence']
             test_lift = res['test_lift']
             
-            if test_lift > 1.2:
+            if test_lift > 1.2 and test_conf >= 0.5:
                 test_lift_above_1_2 += 1
                 
             eval_lines.append(
@@ -188,13 +232,52 @@ def main():
         eval_lines.append("")
         eval_lines.append("## Nhận xét (Overfit / Rule drift)")
         
-        eval_lines.append(f"Có {test_lift_above_1_2}/{len(top_rules)} luật trong top 10 vẫn đạt ngưỡng lift > 1.2 trên tập Test.")
+        eval_lines.append(f"Có {test_lift_above_1_2}/{len(top_rules)} luật trong top 10 vẫn đạt cả lift > 1.2 và confidence >= 0.5 trên tập Test.")
         
         eval_lines.append("")
         eval_lines.append("> **Hạn chế dữ liệu:** Dữ liệu thu thập là một snapshot các tin tuyển dụng còn active tính đến ngày 29/09. "
                           "Do đó, việc chia Train/Test theo `posted_date` phản ánh sự khác biệt theo độ tuổi của tin (tin cũ vs tin mới đăng), "
                           "chứ không hoàn toàn đo lường được sự thay đổi của thị trường theo thời gian dài.")
 
+    
+    # --- THÊM BẢNG LUẬT DATA ---
+    print("Running Apriori for Data rules on Train...")
+    data_rules, data_ms, data_counts = mine_data_rules(train_df, min_lift=1.2, min_confidence=0.5)
+
+    eval_lines.append("")
+    eval_lines.append("## Top luật có kỹ năng data")
+    eval_lines.append(f"Kỹ năng data dùng để lọc: {', '.join(sorted(DATA_SKILLS))}.")
+    eval_lines.append("")
+    eval_lines.append("Số luật có kỹ năng data theo min_support (Train, lift > 1.2, confidence >= 0.5):")
+    for ms, count in data_counts.items():
+        eval_lines.append(f"- min_support = {ms}: {count} luật")
+    eval_lines.append("")
+
+    if data_rules.empty:
+        eval_lines.append("Không tìm thấy luật nào chứa kỹ năng data ở các mức min_support đã thử.")
+    else:
+        eval_lines.append(f"=> Chọn `min_support` = {data_ms} (mức cao nhất cho ra ≥10 luật có kỹ năng data; nếu không có thì lấy mức nhiều luật nhất).")
+        eval_lines.append("")
+        top_data = dedup_by_itemset(data_rules, top_n=10)
+        data_test_results = evaluate_rules_on_test(top_data, test_df)
+
+        eval_lines.append("| Antecedents | Consequents | Train Support | Train Conf | Train Lift | Test Support | Test Conf | Test Lift |")
+        eval_lines.append("|-------------|-------------|---------------|------------|------------|--------------|-----------|-----------|")
+
+        data_pass = 0
+        for idx, row in top_data.iterrows():
+            ant_str = ", ".join(list(row['antecedents']))
+            con_str = ", ".join(list(row['consequents']))
+            res = data_test_results[idx]
+            if res['test_lift'] > 1.2 and res['test_confidence'] >= 0.5:
+                data_pass += 1
+            eval_lines.append(
+                f"| {ant_str} | {con_str} | {row['support']:.3f} | {row['confidence']:.3f} | {row['lift']:.3f} "
+                f"| {res['test_support']:.3f} | {res['test_confidence']:.3f} | {res['test_lift']:.3f} |"
+            )
+        eval_lines.append("")
+        eval_lines.append(f"Có {data_pass}/{len(top_data)} luật data vẫn đạt cả lift > 1.2 và confidence >= 0.5 trên tập Test.")
+    
     out_eval = PROJECT_ROOT / "reports" / "rules_eval.md"
     out_eval.parent.mkdir(parents=True, exist_ok=True)
     with open(out_eval, "w", encoding="utf-8") as f:
