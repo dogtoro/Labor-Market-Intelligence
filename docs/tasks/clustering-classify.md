@@ -39,7 +39,7 @@ Nhóm tin tuyển dụng theo kỹ năng (hierarchical clustering), đánh giá 
 - [x] `bias_analysis.md` so ≥3 chiều (kỹ năng, cấp bậc, địa điểm)
 
 ## So sánh phương pháp (04/10, yêu cầu giảng viên)
-- `src/models/comparison.py` chạy lại cây quyết định và HAC weighted của Người 4 trong cùng khung đánh giá với các phương pháp khác, `assert` khớp `classification.py` và `cluster_labels.csv`. **Người 4 review** module này (đụng tới cách đánh giá model của Người 4).
+- `src/models/comparison.py` chạy lại cây quyết định và HAC weighted của Người 4 trong cùng khung đánh giá với các phương pháp khác, `assert` khớp `classification.py` và `cluster_labels.csv`. **Người 4 đã review (04/10).**
 - Kết quả: `reports/model_comparison.md`.
 
 ## Lệnh test

@@ -132,7 +132,7 @@ Cùng dữ liệu, cùng cách chia fold và cùng thước đo với model củ
 | Clustering + purity | `reports/purity_report.md`, `data/processed/cluster_labels.csv` | Người 4 |
 | Decision Tree + bias analysis | `reports/classification_report.md`, `reports/bias_analysis.md`, `models/tree_model.pkl` | Người 4 |
 | EDA, notebook tổng hợp, demo | `notebooks/eda_full.ipynb`, `final_notebook.ipynb`, `demo.ipynb` (ipywidgets) — chạy Restart & Run All không lỗi; `reports/key_numbers.json` | Người 5 |
-| So sánh với phương pháp khác | `src/models/comparison.py` → `reports/model_comparison.md` (Q1–Q3, yêu cầu giảng viên); mục 7 trong `final_notebook.ipynb` | Trưởng nhóm (Người 4 review) |
+| So sánh với phương pháp khác | `src/models/comparison.py` → `reports/model_comparison.md` (Q1–Q3, yêu cầu giảng viên); mục 7 trong `final_notebook.ipynb` | Trưởng nhóm (Người 4 đã review) |
 | Chất lượng code | 127 test pass; kết quả tái lập được (giống hệt giữa các `PYTHONHASHSEED`); SHA-256 trong `docs/MANIFEST.json` | Cả nhóm |
 
 ### ⏳ Chưa làm / còn mở
