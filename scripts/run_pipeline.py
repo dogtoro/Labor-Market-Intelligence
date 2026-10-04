@@ -23,6 +23,7 @@ STEPS = {
     "cluster": "Chạy hierarchical clustering (Jaccard)",
     "classify": "Chạy decision tree phân lớp lương",
     "bias": "Phân tích thiên lệch tin có/không lương → reports/bias_analysis.md",
+    "compare": "So sánh với phương pháp khác (Q1–Q3) → reports/model_comparison.md",
     "figures": "Xuất hình EDA → reports/figures/eda_*.png",
     "all": "Chạy toàn bộ pipeline",
     "test": "Chạy pytest",
@@ -80,12 +81,16 @@ def run_step(step: str):
         subprocess.run([sys.executable, "-m", "src.models.bias_analysis"], cwd=PROJECT_ROOT, check=True)
         return
 
+    if step == "compare":
+        subprocess.run([sys.executable, "-m", "src.models.comparison"], cwd=PROJECT_ROOT, check=True)
+        return
+
     if step == "figures":
         subprocess.run([sys.executable, "-m", "src.viz"], cwd=PROJECT_ROOT, check=True)
         return
 
     if step == "all":
-        for s in ["parse", "clean", "skills", "rules", "cluster", "classify", "bias", "figures", "manifest"]:
+        for s in ["parse", "clean", "skills", "rules", "cluster", "classify", "bias", "compare", "figures", "manifest"]:
             run_step(s)
         return
 

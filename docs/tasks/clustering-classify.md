@@ -38,6 +38,10 @@ Nhóm tin tuyển dụng theo kỹ năng (hierarchical clustering), đánh giá 
 - [x] Confusion matrix + bootstrap CI
 - [x] `bias_analysis.md` so ≥3 chiều (kỹ năng, cấp bậc, địa điểm)
 
+## So sánh phương pháp (04/10, yêu cầu giảng viên)
+- `src/models/comparison.py` chạy lại cây quyết định và HAC weighted của Người 4 trong cùng khung đánh giá với các phương pháp khác, `assert` khớp `classification.py` và `cluster_labels.csv`. **Người 4 review** module này (đụng tới cách đánh giá model của Người 4).
+- Kết quả: `reports/model_comparison.md`.
+
 ## Lệnh test
 ```bash
 pytest tests/test_contract.py -v

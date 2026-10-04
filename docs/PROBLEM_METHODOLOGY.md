@@ -84,6 +84,13 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
 - **Huấn luyện & Tối ưu:** Nested Stratified CV (ngoài 5 fold đánh giá, trong 3 fold chọn `max_depth` ∈ {3..6}, `min_samples_leaf` ∈ {5, 10, 15}), 95% bootstrap CI.
 - **Khả năng diễn giải:** Xuất biểu đồ cây và bảng xếp hạng tầm quan trọng đặc trưng (Feature Importance).
 
+### So sánh với phương pháp khác (yêu cầu giảng viên, DECISIONS 04/10)
+- **Q3:** so Decision Tree với baseline lớp đông nhất, cây chỉ dùng cấp bậc, logistic regression, Bernoulli naive Bayes, k-NN (Jaccard), random forest, gradient boosting — cùng nested CV và cùng seed; báo cáo CI bootstrap và CI ghép cặp của hiệu accuracy.
+- **Q2:** so HAC weighted với HAC average/complete, K-means, HDBSCAN — cùng ma trận và quy tắc nhiễu; độ ổn định bằng ARI trên 50 mẫu con 80%.
+- **Q1:** Apriori vs FP-Growth (cùng luật, so thời gian).
+- Mô hình dựa trên mô hình ngôn ngữ (transformer) chỉ nêu ở phần related work vì 172 tin có nhãn là quá ít và khó giải thích.
+- Kết quả: `reports/model_comparison.md`.
+
 ### Phân tích Thiên lệch Dữ liệu Khuyết (Missing Salary Bias Analysis)
 - Đánh giá định lượng sự khác biệt về phân phối kỹ năng và cấp bậc giữa nhóm tin công khai lương ($25\%$, 172 tin) và nhóm tin ẩn lương ($75\%$, 516 tin).
 - Xác định rõ phạm vi áp dụng và giới hạn suy luận của mô hình dự báo thu nhập.

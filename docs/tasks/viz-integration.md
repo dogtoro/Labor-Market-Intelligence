@@ -42,6 +42,7 @@ Tạo mọi thứ "người xem thấy": biểu đồ EDA, notebook tích hợp,
 - Hình cho slide: `reports/figures/eda_*.png` (EDA), `model_*.png` (luật train/test, hồ sơ cụm, feature importance),
   cùng các hình của Người 4 (`dendrogram.png`, `tree_viz.png`, `confusion_matrix.png`, `bias_*.png`).
 - **Số liệu cho slide: `reports/key_numbers.json`** — không gõ tay; đổi dữ liệu thì chạy lại `final_notebook.ipynb`.
+- So sánh phương pháp (yêu cầu giảng viên): mục 7 trong `final_notebook.ipynb`, hình `reports/figures/model_compare_*.png`, số liệu trong `key_numbers.json` → khoá `comparison`.
 - Còn lại: slide (Người 5 + Người 3).
 
 ## Lệnh test

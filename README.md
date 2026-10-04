@@ -83,6 +83,39 @@ Chi tiết + bảng luật có kỹ năng data: [`reports/rules_eval.md`](report
 
 → Mô hình lương ở Q3 **đại diện cho tin có công bố lương, nghiêng về Hà Nội**, không phải toàn bộ thị trường. Chi tiết: [`reports/bias_analysis.md`](reports/bias_analysis.md).
 
+### So sánh với các phương pháp khác
+
+Cùng dữ liệu, cùng cách chia fold và cùng thước đo với model của dự án; model của dự án được chạy lại trong module so sánh và kiểm khớp kết quả gốc. Chi tiết: [`reports/model_comparison.md`](reports/model_comparison.md), hình `reports/figures/model_compare_*.png`.
+
+| Q3 — phân lớp dải lương (nested CV) | Accuracy (95% CI) | Macro-F1 |
+|---|---|---|
+| Lớp đông nhất (baseline) | 0,349 (0,285–0,419) | 0,172 |
+| Cây quyết định chỉ dùng cấp bậc (6 đặc trưng) | 0,547 (0,471–0,616) | 0,541 |
+| **Decision Tree — model dự án** (81 đặc trưng) | **0,517** (0,442–0,593) | 0,520 |
+| Logistic regression (L2) | 0,570 (0,500–0,640) | 0,569 |
+| Bernoulli naive Bayes | 0,547 (0,477–0,622) | 0,533 |
+| k-NN (Jaccard) | 0,442 (0,372–0,512) | 0,433 |
+| Random forest | **0,581** (0,506–0,651) | 0,578 |
+| Gradient boosting (HistGB) | 0,465 (0,395–0,535) | 0,463 |
+
+- Random forest cao nhất nhưng **không model nào tốt hơn cây quyết định có ý nghĩa thống kê** (CI bootstrap ghép cặp của hiệu accuracy đều chứa 0); chỉ baseline kém hơn có ý nghĩa.
+- Cây chỉ dùng cấp bậc ≈ cây đầy đủ → với 172 tin, đặc trưng kỹ năng gần như không thêm thông tin cho một cây đơn.
+
+| Q2 — phân cụm (540 tin, cùng quy tắc nhiễu) | Cụm thật | Nhiễu | Silhouette | Purity | ARI vs nhóm nghề |
+|---|---|---|---|---|---|
+| **HAC weighted — model dự án** | 5 | 3,9% | 0,066 | 0,322 | 0,079 |
+| HAC average | 3 | 3,5% | 0,067 | 0,244 | 0,024 |
+| HAC complete | 1 (không tách được) | — | — | — | — |
+| K-means (vector nhị phân) | 7 | 0% | 0,059 | **0,374** | **0,107** |
+| HDBSCAN (Jaccard) | 4 | 23,7% (vượt ngưỡng 5%) | 0,036 | 0,228 | 0,026 |
+
+- Không phương pháp nào tìm được cấu trúc rõ (silhouette đều gần 0). K-means khớp nhóm nghề tốt hơn một chút, weighted HAC có silhouette cao gần nhất.
+- **Độ ổn định** của model dự án: ARI giữa phân cụm trên toàn bộ dữ liệu và 50 mẫu con 80% — trung bình **0,345** (5–95%: 0,169–0,599) → phân cụm thay đổi đáng kể khi dữ liệu thay đổi.
+
+**Q1 — Apriori vs FP-Growth:** cho **cùng tập itemset và luật** ở mọi `min_support`; trên dữ liệu nhỏ này FP-Growth **chậm hơn** 2,4–3,4 lần (chi phí dựng cây FP lấn át; FP-Growth có lợi trên dữ liệu lớn hơn).
+
+**Phương pháp dựa trên mô hình ngôn ngữ** (trích kỹ năng/dự đoán lương từ văn bản JD bằng transformer) chỉ nêu ở phần related work: 172 tin có nhãn là quá ít để huấn luyện, và khó giải thích.
+
 ---
 
 ## 2. Trạng thái dự án
@@ -99,7 +132,8 @@ Chi tiết + bảng luật có kỹ năng data: [`reports/rules_eval.md`](report
 | Clustering + purity | `reports/purity_report.md`, `data/processed/cluster_labels.csv` | Người 4 |
 | Decision Tree + bias analysis | `reports/classification_report.md`, `reports/bias_analysis.md`, `models/tree_model.pkl` | Người 4 |
 | EDA, notebook tổng hợp, demo | `notebooks/eda_full.ipynb`, `final_notebook.ipynb`, `demo.ipynb` (ipywidgets) — chạy Restart & Run All không lỗi; `reports/key_numbers.json` | Người 5 |
-| Chất lượng code | 121 test pass; kết quả tái lập được (giống hệt giữa các `PYTHONHASHSEED`); SHA-256 trong `docs/MANIFEST.json` | Cả nhóm |
+| So sánh với phương pháp khác | `src/models/comparison.py` → `reports/model_comparison.md` (Q1–Q3, yêu cầu giảng viên); mục 7 trong `final_notebook.ipynb` | Trưởng nhóm (Người 4 review) |
+| Chất lượng code | 127 test pass; kết quả tái lập được (giống hệt giữa các `PYTHONHASHSEED`); SHA-256 trong `docs/MANIFEST.json` | Cả nhóm |
 
 ### ⏳ Chưa làm / còn mở
 
@@ -111,7 +145,7 @@ Chi tiết + bảng luật có kỹ năng data: [`reports/rules_eval.md`](report
 | Đạt ngưỡng độ phủ từ điển ≥ 80% (A7) | **Chưa đạt:** 72,6% trên bộ kiểm tra độc lập — ghi vào hạn chế, không chỉnh thêm để tránh overfit |
 | Ghi `docs/STANDUP.md` | Vẫn là template |
 
-Lịch: freeze nội dung **18:00 04/10** (Mốc 3) → tổng duyệt 05/10 → trình bày 06/10.
+Lịch: Mốc 3 (khoá nội dung) **đã lùi** để bổ sung phần so sánh theo yêu cầu giảng viên (DECISIONS 04/10); khoá code ngay sau khi xong, trước buổi tổng duyệt. Ngày thuyết trình: xác nhận lại với giảng viên.
 
 ---
 
@@ -237,6 +271,13 @@ Lệnh tương ứng: `scripts/run_pipeline.py` với các bước `crawl → pa
 
 So sánh 172 tin có lương với 516 tin không lương: kỹ năng (Fisher exact + Benjamini–Hochberg), địa điểm (Fisher + BH), cấp bậc (chi-square). Tiền tệ chỉ mô tả nhóm có lương (tin không lương không có thông tin tiền tệ).
 
+### 4.7 So sánh với phương pháp khác
+
+`src/models/comparison.py` (`python scripts/run_pipeline.py compare`): mọi phương pháp chạy trên cùng dữ liệu, cùng fold và cùng thước đo với model dự án.
+- **Q3:** Decision Tree so với baseline lớp đông nhất, cây chỉ dùng cấp bậc, logistic regression, Bernoulli naive Bayes, k-NN (Jaccard), random forest, gradient boosting — cùng nested CV (5×3, cùng seed); CI bootstrap của accuracy và CI bootstrap ghép cặp của hiệu accuracy so với cây.
+- **Q2:** HAC weighted so với HAC average/complete, K-means, HDBSCAN — cùng ma trận kỹ năng đã lọc và cùng quy tắc nhiễu; thêm kiểm tra độ ổn định bằng 50 mẫu con 80% (ARI).
+- **Q1:** Apriori so với FP-Growth — kiểm tra trùng tập luật và so thời gian chạy.
+
 ---
 
 ## 5. Hạn chế
@@ -246,7 +287,8 @@ So sánh 172 tin có lương với 516 tin không lương: kỹ năng (Fisher ex
 - **Từ điển kỹ năng:** độ phủ **72,6%** trên bộ 20 JD kiểm tra độc lập (dưới ngưỡng 80% dự kiến); phần sót là công cụ ngách và kỹ năng mềm diễn đạt tự do.
 - **Cấp bậc:** suy từ tiêu đề, 42% tin không suy được (`Unknown`).
 - **Phân cụm:** silhouette ~0,07 và **nhạy với từ điển** (thêm alias số nhiều buộc phải đổi quy tắc chọn k — `docs/DECISIONS.md` 04/10).
-- **Decision Tree:** 172 mẫu nên CI rộng; nhiều lá < 10 tin.
+- **Decision Tree:** 172 mẫu nên CI rộng; nhiều lá < 10 tin; không tốt hơn có ý nghĩa so với các classifier khác, và cây chỉ dùng cấp bậc cho kết quả tương đương (`reports/model_comparison.md`).
+- **Độ ổn định phân cụm:** ARI trung bình 0,345 giữa các mẫu con 80% — các cụm cụ thể không nên coi là kết luận chắc chắn.
 
 ---
 
@@ -325,7 +367,7 @@ Tải `jobs_clean.parquet` từ Drive nhóm vào `data/processed/` và kiểm ha
 ```bash
 python scripts/run_pipeline.py skills
 python scripts/make_manifest.py              # bắt buộc ngay sau `skills` — các bước model kiểm hash
-for s in rules cluster classify bias figures; do python scripts/run_pipeline.py $s || break; done
+for s in rules cluster classify bias compare figures; do python scripts/run_pipeline.py $s || break; done
 python scripts/make_manifest.py
 ```
 
@@ -340,6 +382,6 @@ sha256sum data/processed/*.parquet data/processed/*.csv   # so với docs/MANIFE
 ### 8.4 Notebook
 
 ```bash
-jupyter notebook notebooks/final_notebook.ipynb    # EDA + 3 mô hình + bias, xuất reports/key_numbers.json
+jupyter notebook notebooks/final_notebook.ipynb    # EDA + 3 mô hình + bias + so sánh phương pháp, xuất reports/key_numbers.json
 jupyter notebook notebooks/demo.ipynb              # demo tương tác (ipywidgets)
 ```

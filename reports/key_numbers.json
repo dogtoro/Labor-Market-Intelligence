@@ -171,5 +171,160 @@
         "adj_p": 1.0
       }
     }
+  },
+  "comparison": {
+    "q3_classifiers": {
+      "Majority class (baseline)": {
+        "accuracy": 0.349,
+        "ci95": [
+          0.285,
+          0.419
+        ],
+        "macro_f1": 0.172,
+        "diff_vs_tree_ci95": [
+          -0.273,
+          -0.064
+        ]
+      },
+      "Seniority only (decision tree)": {
+        "accuracy": 0.547,
+        "ci95": [
+          0.471,
+          0.616
+        ],
+        "macro_f1": 0.541,
+        "diff_vs_tree_ci95": [
+          -0.07,
+          0.122
+        ]
+      },
+      "Decision tree (CART) — project model": {
+        "accuracy": 0.517,
+        "ci95": [
+          0.442,
+          0.593
+        ],
+        "macro_f1": 0.52,
+        "diff_vs_tree_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "Logistic regression (L2)": {
+        "accuracy": 0.57,
+        "ci95": [
+          0.5,
+          0.64
+        ],
+        "macro_f1": 0.569,
+        "diff_vs_tree_ci95": [
+          -0.023,
+          0.134
+        ]
+      },
+      "Bernoulli naive Bayes": {
+        "accuracy": 0.547,
+        "ci95": [
+          0.477,
+          0.622
+        ],
+        "macro_f1": 0.533,
+        "diff_vs_tree_ci95": [
+          -0.052,
+          0.11
+        ]
+      },
+      "k-NN (Jaccard)": {
+        "accuracy": 0.442,
+        "ci95": [
+          0.372,
+          0.512
+        ],
+        "macro_f1": 0.433,
+        "diff_vs_tree_ci95": [
+          -0.157,
+          0.012
+        ]
+      },
+      "Random forest": {
+        "accuracy": 0.581,
+        "ci95": [
+          0.506,
+          0.651
+        ],
+        "macro_f1": 0.578,
+        "diff_vs_tree_ci95": [
+          -0.017,
+          0.145
+        ]
+      },
+      "Gradient boosting (HistGB)": {
+        "accuracy": 0.465,
+        "ci95": [
+          0.395,
+          0.535
+        ],
+        "macro_f1": 0.463,
+        "diff_vs_tree_ci95": [
+          -0.145,
+          0.035
+        ]
+      }
+    },
+    "q3_best_model": "Random forest",
+    "q3_significantly_better_than_tree": [],
+    "q2_methods": {
+      "HAC weighted linkage (Jaccard)": {
+        "k": 8,
+        "n_real_clusters": 5,
+        "noise_share": 0.039,
+        "silhouette": 0.066,
+        "purity": 0.322,
+        "ari": 0.079,
+        "valid": true
+      },
+      "HAC average linkage (Jaccard)": {
+        "k": 6,
+        "n_real_clusters": 3,
+        "noise_share": 0.035,
+        "silhouette": 0.067,
+        "purity": 0.244,
+        "ari": 0.024,
+        "valid": true
+      },
+      "HAC complete linkage (Jaccard)": {
+        "k": 4,
+        "n_real_clusters": 1,
+        "noise_share": 0.0,
+        "silhouette": null,
+        "purity": null,
+        "ari": null,
+        "valid": false
+      },
+      "K-means (binary vectors)": {
+        "k": 7,
+        "n_real_clusters": 7,
+        "noise_share": 0.0,
+        "silhouette": 0.059,
+        "purity": 0.374,
+        "ari": 0.107,
+        "valid": true
+      },
+      "HDBSCAN (Jaccard, min cluster 15)": {
+        "k": null,
+        "n_real_clusters": 4,
+        "noise_share": 0.237,
+        "silhouette": 0.036,
+        "purity": 0.228,
+        "ari": 0.026,
+        "valid": false
+      }
+    },
+    "q2_stability_ari_mean": 0.345,
+    "q2_stability_ari_p5_p95": [
+      0.169,
+      0.599
+    ],
+    "q1_apriori_fpgrowth_identical": true
   }
 }

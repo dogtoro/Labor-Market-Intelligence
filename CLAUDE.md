@@ -82,6 +82,7 @@ python scripts/run_pipeline.py rules    # Apriori
 python scripts/run_pipeline.py cluster  # Hierarchical clustering
 python scripts/run_pipeline.py classify # Decision tree (nested CV)
 python scripts/run_pipeline.py bias     # Thiên lệch tin có/không lương
+python scripts/run_pipeline.py compare  # So sánh với phương pháp khác (Q1–Q3)
 python scripts/run_pipeline.py figures  # Xuất hình vẽ
 python scripts/run_pipeline.py all      # Chạy toàn bộ pipeline
 python scripts/make_manifest.py         # Tạo manifest SHA-256
