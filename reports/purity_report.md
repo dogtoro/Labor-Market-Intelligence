@@ -1,7 +1,7 @@
 # Báo Cáo Phân Cụm & Purity
 
 - **K đã chọn:** 8 → **5 cụm thật** + 21 tin nhiễu (3.9%); silhouette = 0.0655
-- **Quy tắc chọn k (đặt trước khi xem kết quả, DECISIONS 04/10):** cụm < 15 tin coi là **nhiễu/ngoại lai** (nhãn `-1` trong `cluster_labels.csv`); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất (tính trên tin không phải nhiễu).
+- **Quy tắc chọn k(DECISIONS 04/10):** cụm < 15 tin coi là **nhiễu/ngoại lai** (nhãn `-1` trong `cluster_labels.csv`); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất (tính trên tin không phải nhiễu).
 - **Số tin dùng để phân cụm:** 540; bị loại (còn < 2 kỹ năng sau khi lọc): 137
 - **Kỹ năng bị loại** (xuất hiện > 40% số tin, < 10 tin, hoặc kỹ năng mềm/công cụ quản lý): agile, api, bi, cassandra, communication, confluence, databricks, dbt, english, hadoop, japanese, jira, mariadb, nginx, numpy, redshift, rust, scala, scikit_learn, snowflake, statistics, tableau, teamwork
 

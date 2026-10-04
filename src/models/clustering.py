@@ -182,7 +182,7 @@ def evaluate_clusters(cluster_df, jobs_df, stats):
         f.write("# Báo Cáo Phân Cụm & Purity\n\n")
         f.write(f"- **K đã chọn:** {stats['best_k']} → **{len(sizes)} cụm thật** + {n_noise} tin nhiễu "
                 f"({n_noise / n_used:.1%}); silhouette = {stats['best_score']:.4f}\n")
-        f.write(f"- **Quy tắc chọn k (đặt trước khi xem kết quả, DECISIONS 04/10):** cụm < {MIN_CLUSTER_SIZE} tin coi là "
+        f.write(f"- **Quy tắc chọn k(DECISIONS 04/10):** cụm < {MIN_CLUSTER_SIZE} tin coi là "
                 f"**nhiễu/ngoại lai** (nhãn `{NOISE_LABEL}` trong `cluster_labels.csv`); k hợp lệ khi có ≥ {MIN_REAL_CLUSTERS} cụm thật "
                 f"và nhiễu ≤ {MAX_NOISE_SHARE:.0%}; chọn silhouette cao nhất (tính trên tin không phải nhiễu).\n")
         f.write(f"- **Số tin dùng để phân cụm:** {n_used}; bị loại (còn < {MIN_SKILLS_PER_JOB} kỹ năng sau khi lọc): {stats['dropped_jobs_count']}\n")

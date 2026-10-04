@@ -224,7 +224,7 @@ Lệnh tương ứng: `scripts/run_pipeline.py` với các bước `crawl → pa
 - Khoảng cách **Jaccard** trên vector kỹ năng nhị phân.
 - Trước khi phân cụm: bỏ kỹ năng mềm/công cụ quản lý, kỹ năng xuất hiện > 40% hoặc < 10 tin, và tin còn < 2 kỹ năng.
 - **Weighted linkage (WPGMA):** Ward không hợp lệ với Jaccard; average bị chaining (1 cụm 95% tin); complete không cắt được (42% cặp tin có khoảng cách = 1).
-- **Chọn k (đặt trước khi xem kết quả):** k ∈ 4–8; cụm < 15 tin coi là **nhiễu** (nhãn −1); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất.
+- **Chọn k:** k ∈ 4–8; cụm < 15 tin coi là **nhiễu** (nhãn −1); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất.
 - **Purity** và F-measure so với "Job Expertise" gộp 72 giá trị → 10 nhóm (`src/models/expertise_groups.json`, A16 đã review).
 
 ### 4.5 Q3 — Decision Tree
