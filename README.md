@@ -1,342 +1,345 @@
 # 📊 Labor Market Intelligence — Thị Trường Tuyển Dụng CNTT & Dữ Liệu Việt Nam 2026
 
-> **Đề tài:** Thị trường tuyển dụng ngành IT/Dữ liệu Việt Nam 2026 cần kỹ năng gì, và cấp bậc/kỹ năng nào đi kèm dải lương cao?  
-> **Môn học:** Fundamentals of Data Science (USTH)  
-> **Repository:** [https://github.com/dogtoro/Labor-Market-Intelligence](https://github.com/dogtoro/Labor-Market-Intelligence)
+> **Đề tài:** Thị trường tuyển dụng ngành IT/Dữ liệu Việt Nam 2026 cần kỹ năng gì, và cấp bậc/kỹ năng nào đi kèm dải lương cao?
+> **Môn học:** Fundamentals of Data Science (USTH) · Nhóm 5 người · 29/09 → 06/10/2026
+> **Repository:** [github.com/dogtoro/Labor-Market-Intelligence](https://github.com/dogtoro/Labor-Market-Intelligence)
 
-> ⚠️ **Cập nhật nguồn dữ liệu (29/09, tối Mốc 1):** Nguồn dự kiến ban đầu **TopCV bị chặn hoàn toàn bởi Cloudflare JS Challenge** trên mọi path (kể cả `sitemap.xml`), xác nhận qua pilot crawl bằng `requests`/UA trung thực — không có cách vượt qua hợp lệ trong phạm vi quy tắc dự án (`CLAUDE.md` mục 3). Đã chuyển sang **ITviec** làm nguồn chính: robots.txt cho phép tường minh (`Allow: /`), không bị WAF chặn, HTML render sẵn phía server. Crawl đầy đủ tối 29/09 thu được **688 tin IT** (sitemap lúc 21:22; bản pilot lúc 16:41 có 681 tin) — nhóm chấp nhận hạ ngưỡng ≥1.000 ban đầu. **Mốc 1 đã chốt Go ITviec** (Trưởng nhóm, được giảng viên giao toàn quyền), gồm cả việc dùng lương trong JSON-LD `baseSalary` vì giao diện ẩn lương sau đăng nhập. Bằng chứng, pilot 20 tin và quyết định tại [`docs/tos_review.md`](docs/tos_review.md) (mục 10), [`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
+> [!NOTE]
+> **Trạng thái (04/10/2026):** pipeline dữ liệu, 3 mô hình, phân tích thiên lệch, notebook và demo **đã hoàn thành** trên `main`. **Còn lại: slide trình bày** và 2 mục quản trị dữ liệu (xem [mục 2](#2-trạng-thái-dự-án)). Mọi con số trong README lấy từ `reports/` và `reports/key_numbers.json` (sinh bằng code).
 
----
-
-## 📑 Mục Lục
-1. [Bối Cảnh & Mô Tả Bài Toán (Problem Statement)](#1-bối-cảnh--mô-tả-bài-toán-problem-statement)
-   - [1.1 Bối cảnh thực tiễn](#11-bối-cảnh-thực-tiễn)
-   - [1.2 Mục tiêu nghiên cứu](#12-mục-tiêu-nghiên-cứu)
-   - [1.3 Câu hỏi nghiên cứu (Research Questions)](#13-câu-hỏi-nghiên-cứu-research-questions)
-   - [1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận](#14-phạm-vi-dữ-liệu--nguyên-tắc-tiếp-cận)
-2. [Phương Pháp Luận (Methodology)](#2-phương-pháp-luận-methodology)
-   - [2.1 Kiến trúc tổng thể Pipeline (End-to-End Architecture)](#21-kiến-trúc-tổng-thể-pipeline-end-to-end-architecture)
-   - [2.2 Tiền xử lý & Chuẩn hóa dữ liệu (Data Preprocessing)](#22-tiền-xử-lý--chuẩn-hóa-dữ-liệu-data-preprocessing)
-     - [Trích xuất bảng & Lưu trữ](#trích-xuất-bảng--lưu-trữ)
-     - [Khử trùng lặp đa tiêu chí (Deduplication)](#khử-trùng-lặp-đa-tiêu-chí-deduplication)
-     - [Chuẩn hóa & Rời rạc hóa dải lương (Salary Normalization & Discretization)](#chuẩn-hóa--rời-rạc-hóa-dải-lương-salary-normalization--discretization)
-     - [Trích xuất kỹ năng bằng từ điển Regex (Skill Extraction)](#trích-xuất-kỹ-năng-bằng-từ-điển-regex-skill-extraction)
-   - [2.3 Khai phá tập mẫu phổ biến & Luật kết hợp (Association Rule Mining — Apriori)](#23-khai-phá-tập-mẫu-phổ-biến--luật-kết-hợp-association-rule-mining--apriori)
-   - [2.4 Phân cụm vị trí việc làm (Hierarchical Agglomerative Clustering — HAC)](#24-phân-cụm-vị-trí-việc-làm-hierarchical-agglomerative-clustering--hac)
-   - [2.5 Phân lớp dự đoán dải lương & Tầm quan trọng đặc trưng (Decision Tree Classification)](#25-phân-lớp-dự-đoán-dải-lương--tầm-quan-trọng-đặc-trưng-decision-tree-classification)
-   - [2.6 Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)](#26-phân-tích-thiên-lệch-dữ-liệu-missing-data-bias-analysis)
-3. [Đảm Bảo Chất Lượng & Quản Trị Dữ Liệu (Data Contract & Governance)](#3-đảm-bảo-chất-lượng--quản-trị-dữ-liệu-data-contract--governance)
-4. [Cấu Trúc Thư Mục Dự Án](#4-cấu-trúc-thư-mục-dự-án)
-5. [Hướng Dẫn Cài Đặt & Chạy Thử](#5-hướng-dẫn-cài-đặt--chạy-thử)
+> ⚠️ **Nguồn dữ liệu:** dự kiến ban đầu là TopCV, nhưng TopCV **chặn toàn bộ domain bằng Cloudflare JS Challenge** (kể cả `sitemap.xml`) với client không chạy JavaScript — không có cách vượt qua hợp lệ trong phạm vi quy tắc crawl của dự án (`CLAUDE.md` mục 3). Nhóm chuyển sang **ITviec** (robots.txt `Allow: /`, HTML render phía server). Chi tiết: [`docs/tos_review.md`](docs/tos_review.md), [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
-## 1. Bối Cảnh & Mô Tả Bài Toán (Problem Statement)
+## 📑 Mục lục
 
-### 1.1 Bối cảnh thực tiễn
-Thị trường lao động ngành Công nghệ Thông tin (IT) và Kỹ thuật/Khoa học Dữ liệu (Data Science, Data Engineering, AI/ML) tại Việt Nam năm 2026 đang chứng kiến sự dịch chuyển mạnh mẽ. Sự phát triển bùng nổ của Generative AI, điện toán đám mây và kiến trúc dữ liệu lớn (Lakehouse, MLOps) đặt ra yêu cầu mới đối với các kỹ sư: không còn đơn thuần là biết một ngôn ngữ lập trình độc lập, mà đòi hỏi sự kết hợp đồng thời của các nhóm kỹ năng (skill bundles).
-
-Tuy nhiên, sinh viên mới ra trường và người tìm việc thường đối mặt với các bất cân xứng thông tin:
-- **Khoảng cách kỹ năng (Skill Gap):** Không nắm rõ tổ hợp kỹ năng nào thường xuyên được các nhà tuyển dụng yêu cầu đi kèm với nhau.
-- **Phân nhóm công việc thực tế vs Danh mục lý thuyết:** Các tiêu đề tuyển dụng trên mạng xã hội và sàn tuyển dụng có sự đa dạng rất lớn ("Python Dev", "Data Platform Engineer", "Backend AI Engineer"...), gây khó khăn cho việc phân định ranh giới nghề nghiệp.
-- **Minh bạch thu nhập:** Phần lớn tin tuyển dụng ghi lương "Thoả thuận" hoặc "Cạnh tranh", gây nhiễu và thiên lệch khi người học muốn định giá kỹ năng của mình trên thị trường.
-
-### 1.2 Mục tiêu nghiên cứu
-Dự án **Labor Market Intelligence** thu thập, làm sạch và khai phá dữ liệu tuyển dụng IT/Dữ liệu quy mô thực tế từ nền tảng tuyển dụng **ITviec** (đổi từ TopCV do bị chặn bởi Cloudflare — xem [`docs/tos_review.md`](docs/tos_review.md)) nhằm mục đích:
-1. Phát hiện các **quy luật kết hợp kỹ năng (Skill Association Rules)** được săn đón nhiều nhất.
-2. Tự động **phân nhóm các vị trí tuyển dụng (Job Clustering)** theo không gian kỹ năng thực tế thay vì dựa vào nhãn cảm tính.
-3. Đánh giá tác động của **kỹ năng, cấp bậc kinh nghiệm và địa điểm** tới khả năng đạt **dải lương cao** (thông qua mô hình học máy có khả năng giải thích).
-
-### 1.3 Câu hỏi nghiên cứu (Research Questions)
-
-| Mã | Câu hỏi nghiên cứu | Phương pháp / Mô hình giải quyết |
-| :--- | :--- | :--- |
-| **Q1** | Những nhóm kỹ năng nào thường xuyên **đồng xuất hiện (co-occur)** trong các bản mô tả công việc (JD)? Luật nào có độ tin cậy (*Confidence*) và độ nâng (*Lift*) cao nhất? | **Association Rules (Apriori Algorithm)** |
-| **Q2** | Các tin tuyển dụng tự nhiên phân tách thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng thực tế? Các cụm tìm được có khớp với danh mục tuyển dụng chuẩn không? | **Hierarchical Clustering (Jaccard Distance + Weighted Linkage) & Cluster Purity** |
-| **Q3** | Các kỹ năng nào đóng vai trò **tiên quyết để phân định dải thu nhập** (thấp vs trung bình vs cao)? Có tồn tại thiên lệch hệ thống giữa tin công khai lương và tin giấu lương không? | **Decision Tree Classification (CART), Feature Importance & Missing Data Bias Analysis** |
-
-### 1.4 Phạm vi dữ liệu & Nguyên tắc tiếp cận
-- **Nguồn dữ liệu:** Tin tuyển dụng công khai thuộc ngành IT/Software và Data/AI trên nền tảng **ITviec** (site chuyên biệt IT, **688 tin** crawl tối 29/09; 172 tin (25,0%) có lương — xem `docs/tos_review.md`, `reports/dedup_report.md`).
-- **Cam kết sử dụng dữ liệu:** chỉ công bố số liệu tổng hợp, không trích nguyên văn JD, không commit/chia sẻ HTML thô (`docs/DECISIONS.md`, 29/09).
-- **Phương thức:** Thu thập 1 đợt (snapshot), có rate-limit chặt chẽ ($\ge 3$s/request), tuân thủ ToS và `robots.txt`.
-- **Tính toán tái lặp (Reproducibility):** Toàn bộ dữ liệu thô và trung gian được bảo chứng tính toàn vẹn bằng mã băm SHA-256 (`docs/MANIFEST.json`).
+1. [Kết quả chính](#1-kết-quả-chính)
+2. [Trạng thái dự án](#2-trạng-thái-dự-án)
+3. [Bài toán](#3-bài-toán)
+4. [Phương pháp](#4-phương-pháp)
+5. [Hạn chế](#5-hạn-chế)
+6. [Chất lượng & quản trị dữ liệu](#6-chất-lượng--quản-trị-dữ-liệu)
+7. [Cấu trúc thư mục](#7-cấu-trúc-thư-mục)
+8. [Cài đặt & chạy](#8-cài-đặt--chạy)
 
 ---
 
-## 2. Phương Pháp Luận (Methodology)
+## 1. Kết quả chính
 
-### 2.1 Kiến trúc tổng thể Pipeline (End-to-End Architecture)
+### Dữ liệu
 
-Quy trình dữ liệu được thiết kế theo mô hình **4 tầng dữ liệu phân tách rõ ràng (Layered Data Architecture)**:
+| Chỉ số | Giá trị |
+|---|---|
+| Tin tuyển dụng (ITviec, crawl 29/09/2026) | **688** (parse thành công 688/688, 0 tin trùng) |
+| Khoảng ngày đăng | 10/08 → 29/09/2026 |
+| Tin có công bố lương | **172 / 688 (25,0%)** — 151 ghi USD, 21 ghi VND; trung vị ≈ 38,7 triệu VND/tháng |
+| Ma trận kỹ năng | **677 tin × 100 kỹ năng** (từ điển 114 kỹ năng; 11 tin không bắt được kỹ năng nào) |
+| Kỹ năng phổ biến nhất | english 54,7%, api 45,2%, communication 42,0%, cicd 31,4%, git 28,6%, sql 28,5%, aws 27,6% |
+
+### Q1 — Kỹ năng nào thường đi cùng nhau? (Apriori)
+
+- Train 473 tin cũ / Test 204 tin mới (chia theo `posted_date`); `min_support = 0,1`, lift > 1,2, confidence ≥ 0,5 → **43 luật**.
+- **9/10 luật top vẫn đạt** cả lift > 1,2 và confidence ≥ 0,5 trên tập test.
+
+| Luật | Train conf / lift | Test conf / lift |
+|---|---|---|
+| spring → java | 1,00 / 4,68 | 1,00 / 4,00 |
+| kubernetes → docker | 0,66 / 3,20 | 0,72 / 2,42 |
+| gcp → aws | 0,81 / 3,00 | 0,94 / 3,09 |
+| azure → aws | 0,74 / 2,75 | 0,78 / 2,56 |
+| microservices → kubernetes | 0,59 / 2,88 | 0,40 / 1,74 *(không giữ được trên test)* |
+
+Chi tiết + bảng luật có kỹ năng data: [`reports/rules_eval.md`](reports/rules_eval.md).
+
+### Q2 — Tin tuyển dụng tự chia thành bao nhiêu nhóm nghề? (Hierarchical Clustering)
+
+- 540 tin được phân cụm → **5 cụm thật + 21 tin nhiễu (3,9%)**:
+
+| Cụm | Số tin | Đặc trưng (top kỹ năng) |
+|---|---|---|
+| 1 | 309 | DevOps/Backend chung — cicd, git, aws, docker, java |
+| 2 | 85 | AI/Python — python, llm, cpp |
+| 3 | 73 | SQL/.NET — sql (95%), mssql, dotnet |
+| 4 | 26 | Cloud/Data — aws, azure, etl, airflow |
+| 5 | 26 | QA — test_automation (100%), cicd |
+
+- Purity **0,322** so với baseline 0,214 (gom tất cả vào 1 cụm); F-measure 0,343; **silhouette chỉ 0,066**.
+- **Kết luận:** tổ hợp kỹ năng trên ITviec **không tách thành các nhóm nghề rõ ràng**; một cụm "chung" chiếm 60% số tin. Một vài cụm nhỏ (AI, SQL, QA) có đặc trưng rõ. Chi tiết: [`reports/purity_report.md`](reports/purity_report.md).
+
+### Q3 — Cấp bậc/kỹ năng nào dự báo lương cao? (Decision Tree)
+
+- 172 tin có lương, nhãn tertile: **Low < 32,2 ≤ Mid < 50,0 ≤ High** (triệu VND/tháng; 60/55/57 tin).
+- Nested CV: accuracy out-of-fold **51,7%** (95% CI 44,2–59,3%) so với baseline **34,9%**; macro-F1 0,52.
+- **Cấp bậc là yếu tố quan trọng nhất:** Lead (75% High), Manager (78% High), Senior (chia đều Mid/High), Middle (73% Low). Nhóm `Intern/Junior` toàn bộ là Low — nhưng 14/17 tin là **thực tập sinh** (phụ cấp, không phải lương).
+- Các nhánh theo kỹ năng (docker, go, react, kubernetes…) dựa trên rất ít tin → không diễn giải thành "kỹ năng X → lương Y". Chi tiết: [`reports/classification_report.md`](reports/classification_report.md).
+
+### Thiên lệch tin có / không công bố lương
+
+| Chiều | Kết quả |
+|---|---|
+| **Địa điểm** | **Có thiên lệch có ý nghĩa:** HN 51,7% vs 38,6% (adj p = 0,006); HCM 47,7% vs 66,5% (adj p = 0,0001) |
+| Kỹ năng (100 kỹ năng, Fisher + Benjamini–Hochberg) | Không kỹ năng nào khác biệt có ý nghĩa |
+| Cấp bậc | Không khác biệt có ý nghĩa (chi-square p = 0,06) |
+
+→ Mô hình lương ở Q3 **đại diện cho tin có công bố lương, nghiêng về Hà Nội**, không phải toàn bộ thị trường. Chi tiết: [`reports/bias_analysis.md`](reports/bias_analysis.md).
+
+---
+
+## 2. Trạng thái dự án
+
+### ✅ Đã hoàn thành
+
+| Hạng mục | Kết quả | Người phụ trách |
+|---|---|---|
+| ToS / robots.txt, crawl | TopCV No-Go, ITviec Go; 688 tin, 715 request, 100% HTTP 200, delay ≥ 3s | Người 1 |
+| Governance | `docs/governance.md`: UA, rate limit, ToS, backup, hash tổng 688 file HTML thô | Người 1 |
+| Parse, dedup, chuẩn hóa lương | 688/688 tin, 0 trùng, tỷ giá 25.780 VND/USD; freeze `jobs_clean.parquet` (Mốc 2) | Người 2 |
+| Từ điển kỹ năng + ma trận | 114 kỹ năng, alias phân biệt hoa thường, alias số nhiều; kiểm chứng độ phủ (A7) | Người 3 |
+| Apriori + đánh giá train/test | `reports/rules_eval.md` | Người 3 |
+| Clustering + purity | `reports/purity_report.md`, `data/processed/cluster_labels.csv` | Người 4 |
+| Decision Tree + bias analysis | `reports/classification_report.md`, `reports/bias_analysis.md`, `models/tree_model.pkl` | Người 4 |
+| EDA, notebook tổng hợp, demo | `notebooks/eda_full.ipynb`, `final_notebook.ipynb`, `demo.ipynb` (ipywidgets) — chạy Restart & Run All không lỗi; `reports/key_numbers.json` | Người 5 |
+| Chất lượng code | 121 test pass; kết quả tái lập được (giống hệt giữa các `PYTHONHASHSEED`); SHA-256 trong `docs/MANIFEST.json` | Cả nhóm |
+
+### ⏳ Chưa làm / còn mở
+
+| Việc | Ghi chú |
+|---|---|
+| **Slide trình bày** (≤ 15 trang) | Chưa có trong repo. Số liệu và hình đã sẵn: `reports/key_numbers.json`, `reports/figures/` |
+| Xác nhận quyền truy cập Drive + kiểm hash sau backup | 2 mục ⏳ trong `docs/governance.md` mục 5 |
+| Upload bản cuối lên Drive | `skill_matrix.parquet` (`26f6716e…`), `cluster_labels.csv` (`044fe534…`) |
+| Đạt ngưỡng độ phủ từ điển ≥ 80% (A7) | **Chưa đạt:** 72,6% trên bộ kiểm tra độc lập — ghi vào hạn chế, không chỉnh thêm để tránh overfit |
+| Ghi `docs/STANDUP.md` | Vẫn là template |
+
+Lịch: freeze nội dung **18:00 04/10** (Mốc 3) → tổng duyệt 05/10 → trình bày 06/10.
+
+---
+
+## 3. Bài toán
+
+### 3.1 Bối cảnh
+
+Thị trường IT/Dữ liệu Việt Nam đòi hỏi kỹ sư kết hợp nhiều nhóm kỹ năng (cloud, DevOps, data, AI) thay vì một ngôn ngữ đơn lẻ. Người học gặp 3 khoảng trống thông tin: không rõ **kỹ năng nào đi cùng nhau**, **tiêu đề tin tuyển dụng không phản ánh nhóm nghề thật**, và **phần lớn tin giấu lương** ("Thỏa thuận").
+
+### 3.2 Câu hỏi nghiên cứu
+
+| Mã | Câu hỏi | Phương pháp |
+|---|---|---|
+| **Q1** | Nhóm kỹ năng nào thường **đồng xuất hiện** trong JD? Luật nào có confidence và lift cao, và có giữ được trên tin mới hơn không? | Association Rules (Apriori), chia train/test theo thời gian |
+| **Q2** | Tin tuyển dụng tự nhiên chia thành **bao nhiêu nhóm nghề** theo tổ hợp kỹ năng? Có khớp danh mục "Job Expertise" của ITviec không? | Hierarchical Clustering (Jaccard + weighted linkage), purity, F-measure |
+| **Q3** | **Cấp bậc, kỹ năng, địa điểm** nào phân định dải lương? Tin có lương có thiên lệch so với tin giấu lương không? | Decision Tree (CART), nested CV, feature importance; bias analysis |
+
+### 3.3 Phạm vi & nguyên tắc
+
+- **Nguồn:** tin tuyển dụng công khai trên ITviec, crawl **1 đợt** (snapshot 29/09/2026) từ sitemap `twinnings_jobs_desc_en.xml`.
+- **Crawl có trách nhiệm:** User-Agent trung thực kèm email nhóm, delay ≥ 3s, tôn trọng robots.txt, không đăng nhập, không gọi API nội bộ.
+- **Cam kết sử dụng dữ liệu:** chỉ công bố số liệu tổng hợp, **không trích nguyên văn JD**, không commit/chia sẻ HTML thô; lương lấy từ JSON-LD `baseSalary` mà ITviec nhúng công khai (giao diện ẩn lương sau đăng nhập).
+- **Tái lập:** mọi con số sinh từ code; dữ liệu đã freeze được kiểm SHA-256.
+
+---
+
+## 4. Phương pháp
+
+### 4.1 Pipeline 4 tầng
 
 ```mermaid
 flowchart TD
-    subgraph L1["Tầng 1: Raw Ingestion"]
-        Sitemap["ITviec Sitemap / List Pages"] -->|"Crawler rate-limit >= 3s"| RawHTML["HTML Snapshots (data/raw/)"]
-        RawHTML -->|"Hash integrity"| Manifest["docs/MANIFEST.json (SHA-256)"]
+    subgraph L1["Tầng 1: Raw"]
+        Sitemap["ITviec sitemap"] -->|"crawler, delay ≥ 3s"| Raw["data/raw/*.html (688)"]
+        Raw -->|"hash tổng SHA-256"| Gov["docs/governance.md"]
     end
-
-    subgraph L2["Tầng 2: Parsing & Validation"]
-        RawHTML -->|"HTML Parser (selectolax/bs4)"| ParsedDF["jobs_parsed.parquet (data/interim/)"]
-        ParsedDF -->|"Contract Check: validate_parsed()"| V1{"Hợp lệ schema?"}
-        V1 -->|"Không"| Alert1["Raise ValidationError"]
+    subgraph L2["Tầng 2: Parsed"]
+        Raw -->|"BeautifulSoup + JSON-LD"| Parsed["jobs_parsed.parquet (11 cột)"]
+        Parsed -->|"validate_parsed()"| V1{"Đúng schema?"}
     end
-
-    subgraph L3["Tầng 3: Data Cleaning & Normalization"]
-        V1 -->|"Có"| Dedup["Deduplication Engine<br/>(Company + Title Sim >= 0.85 + JD Sim >= 0.95 + Date <= 7d)"]
-        Dedup --> SalaryParser["Salary Normalization<br/>(VND/USD -> trieu, Min/Max/Bins)"]
-        SalaryParser --> CleanDF["jobs_clean.parquet (data/processed/)"]
-        CleanDF -->|"Contract Check: validate_clean()"| V2{"Hợp lệ clean?"}
-        V2 -->|"Không"| Alert2["Raise ValidationError"]
+    subgraph L3["Tầng 3: Clean"]
+        V1 -->|"có"| Dedup["Dedup: cùng công ty + tiêu đề ≥ 0,85 + JD ≥ 0,95 + ≤ 7 ngày"]
+        Dedup --> Salary["Chuẩn hóa lương → triệu VND/tháng"]
+        Salary --> Clean["jobs_clean.parquet (FREEZE, MANIFEST)"]
     end
-
-    subgraph L4["Tầng 4: Feature Engineering & Modeling"]
-        V2 -->|"Có"| SkillExtractor["Dictionary-based Skill Extractor<br/>(100+ Skills, Regex Word-Boundary)"]
-        SkillExtractor --> SkillMatrix["skill_matrix.parquet (data/processed/)<br/>(Ma trận nhị phân Jobs x Skills)"]
-        SkillMatrix -->|"Contract Check: validate_skills()"| V3{"Hợp lệ matrix?"}
-        
-        V3 -->|"Có"| M1["Mô hình 1: Apriori Rules<br/>(Temporal Train/Test Split)"]
-        V3 -->|"Có"| M2["Mô hình 2: Hierarchical Clustering<br/>(Jaccard Distance + Purity Metric)"]
-        CleanDF -.->|"Chỉ tin có lương"| M3["Mô hình 3: Decision Tree<br/>(Salary Classification + Feature Imp.)"]
+    subgraph L4["Tầng 4: Feature & Model"]
+        Clean --> Skills["Trích kỹ năng (từ điển 114 kỹ năng)"]
+        Skills --> Matrix["skill_matrix.parquet (677 × 100)"]
+        Matrix --> M1["Q1: Apriori (train/test theo thời gian)"]
+        Matrix --> M2["Q2: HAC Jaccard + weighted, quy tắc nhiễu"]
+        Clean -.->|"172 tin có lương"| M3["Q3: Decision Tree, nested CV"]
+        Clean --> M4["Bias analysis: có vs không lương"]
     end
 ```
 
-#### Chi tiết vận hành luồng dữ liệu qua 4 tầng:
+#### Chi tiết vận hành luồng dữ liệu qua 4 tầng
 
-1. **Tầng 1: Thu thập dữ liệu thô (Raw Ingestion Layer)**
-   - **Nguồn thu thập:** Hệ thống crawler thu thập dữ liệu công khai từ Sitemap `twinnings_jobs_desc_en.xml` của ITviec (bản `_vn.xml` trùng 100% nên không dùng). `job_id` = toàn bộ slug URL (4 số cuối URL không unique).
-   - **Kiểm soát tốc độ (Crawler Rate-limit $\ge 3$s):** Cơ chế tạm dừng (delay) tối thiểu 3 giây giữa mỗi request HTTP liên tiếp. Đây là quy tắc thu thập dữ liệu có trách nhiệm (Polite Web Scraping) nhằm tôn trọng tài nguyên máy chủ, tuân thủ `robots.txt` và tránh kích hoạt cơ chế chặn tự động (Cloudflare / WAF 429 Too Many Requests).
-   - **Bảo chứng tính toàn vẹn (Reproducibility):** Toàn bộ file HTML thô được lưu trữ nguyên bản tại `data/raw/{job_id}.html`. Sau khi thu thập xong, mã băm SHA-256 của từng file được đóng băng trong `docs/MANIFEST.json` để đảm bảo dữ liệu nghiên cứu có thể kiểm chứng độc lập.
+| Tầng | Đầu vào → đầu ra | Bước pipeline | Chốt chặn |
+|---|---|---|---|
+| 1. Raw | Sitemap ITviec → `data/raw/{job_id}.html` + `data/crawl_log.csv` | `crawl` (`src/crawl/crawler.py`) | robots.txt, delay ≥ 3s, hash tổng HTML |
+| 2. Parsed | HTML → `data/interim/jobs_parsed.parquet` + `reports/parse_errors.csv` | `parse` (`src/parse/parser.py`) | `validate_parsed()`, tỷ lệ parse ≥ 90% |
+| 3. Clean | `jobs_parsed` → `data/processed/jobs_clean.parquet` + `reports/dedup_report.md` | `clean` (`src/clean/dedup.py`) | `validate_clean()`, freeze + SHA-256 (Mốc 2) |
+| 4. Feature & Model | `jobs_clean` → `skill_matrix.parquet` → luật, cụm, cây, bias → `reports/`, `models/` | `skills`, `rules`, `cluster`, `classify`, `bias`, `figures` | `validate_skills()`, kiểm hash với MANIFEST |
 
-2. **Tầng 2: Phân tích cú pháp & Kiểm định cấu trúc (Parsing & Schema Validation Layer)**
-   - **Bóc tách dữ liệu:** Bộ trích xuất HTML kết hợp `selectolax` (tốc độ cao) và `BeautifulSoup4` phân giải HTML thô thành bảng dữ liệu gồm 11 cột theo `docs/DATA_CONTRACT.md`: `job_id`, `url`, `title`, `company`, `level`, `location`, `posted_date`, `category`, `salary_raw`, `jd_text`, `crawled_at`. Với ITviec: `salary_raw` và `posted_date` lấy từ JSON-LD `JobPosting` (`baseSalary`, `datePosted`), `category` lấy từ trường "Job Expertise". Kết quả lưu dưới dạng `data/interim/jobs_parsed.parquet`.
-   - **Chốt chặn hợp đồng 1 (`validate_parsed`):** Áp dụng nguyên lý *Fail-fast* (thất bại sớm) ngay tại cửa ngõ dữ liệu. Hàm kiểm định bắt buộc dữ liệu không rỗng, đủ các cột bắt buộc, `job_id` là khóa chính duy nhất và không bị khuyết thiếu `title`, `company`. Nếu vi phạm, pipeline sẽ lập tức ngắt và báo lỗi (`Raise ValidationError`).
+1. **Tầng 1 — Thu thập dữ liệu thô (Raw Ingestion)**
+   - **Nguồn:** crawler đọc `robots.txt` (dừng nếu không đọc được), lấy danh sách URL từ sitemap `twinnings_jobs_desc_en.xml` (bản `_vn.xml` trùng 100% slug nên không dùng), rồi tải từng trang tin công khai. `job_id` = toàn bộ slug URL.
+   - **Kiểm soát tốc độ:** mỗi request cách request trước ≥ 3,1 giây; mỗi URL được kiểm `robots.txt` trước khi gửi; User-Agent `USTH-FDS-Project/2026 (contact: …)` lấy email từ biến `CRAWL_CONTACT` (thiếu thì crawler từ chối chạy).
+   - **Cache & log:** file đã có trong `data/raw/` thì không tải lại; mọi request thật được ghi vào `data/crawl_log.csv` (`url`, `status`, `timestamp`). Lần crawl 29/09: 715 request ITviec, 100% HTTP 200.
+   - **Toàn vẹn:** HTML thô không commit (chỉ lưu local + Google Drive); hash tổng 688 file ghi trong `docs/governance.md`.
 
-3. **Tầng 3: Làm sạch & Chuẩn hóa nghiệp vụ (Data Cleaning & Normalization Layer)**
-   - **Khử trùng lặp đa tiêu chí (Deduplication Engine):** Tin tuyển dụng thực tế thường xuyên được các doanh nghiệp đăng lại nhiều lần trong tuần. Bộ lọc đối sánh bốn tiêu chuẩn: cùng công ty, độ tương đồng chuỗi tiêu đề $\ge 0.85$ (Gestalt Pattern Matching qua `difflib.SequenceMatcher`), độ tương đồng JD $\ge 0.95$ (JD gần như trùng hệt) và khoảng cách ngày đăng $\le 7$ ngày; tự động giữ lại bản ghi mới hơn và loại bỏ bản trùng lặp. Điều kiện JD được thêm vì tiêu đề ITviec thường theo khuôn mẫu (vd. "Middle/Senior Mobile Developer" vs "Middle/Senior Backend Developer"); trên dữ liệu 29/09 kết quả là **0 tin trùng** (`reports/dedup_report.md`).
-   - **Chuẩn hóa thu nhập (Salary Normalization):** Nhận diện cấu trúc lương chuỗi tiếng Việt/tiếng Anh, quy đổi ngoại tệ (USD sang VNĐ triệu), phân loại vào 3 trạng thái (`full_range`, `one_sided`, `undisclosed`) và tính lương trung vị đại diện `salary_mid = (min + max) / 2`.
-   - **Chốt chặn hợp đồng 2 (`validate_clean`):** Kiểm tra tính hợp lệ nghiệp vụ trên `data/processed/jobs_clean.parquet` (tin có đủ dải lương bắt buộc thỏa mãn $0 < \text{salary}_{\min} \le \text{salary}_{\max}$; các tin giấu lương bắt buộc các cột số liệu là null).
+2. **Tầng 2 — Phân tích cú pháp & kiểm định cấu trúc (Parsing & Validation)**
+   - **Bóc tách:** BeautifulSoup đọc khối JSON-LD `JobPosting` (title, công ty, `datePosted`, `baseSalary`, `addressRegion`), dòng "Job Expertise" (`category`) và 2 mục JD; `url`, `crawled_at` ghép từ `crawl_log.csv`; `level` suy từ tiêu đề.
+   - **Lỗi từng file không dừng cả batch:** file lỗi được ghi vào `reports/parse_errors.csv`; pipeline **dừng** nếu tỷ lệ parse < 90%. Thực tế: 688/688, 0 lỗi.
+   - **Chốt chặn 1 — `validate_parsed()`:** đủ cột bắt buộc, không null ở `job_id`/`url`/`title`/`company`/`jd_text`/`crawled_at`, `job_id` duy nhất. Vi phạm → `ValueError`, không ghi file.
 
-4. **Tầng 4: Trích xuất đặc trưng & Khai phá mô hình (Feature Engineering & Modeling Layer)**
-   - **Trích xuất ma trận kỹ năng (Skill Extraction):** Quét toàn bộ phần mô tả công việc (JD) qua từ điển chuẩn hóa $> 100$ kỹ năng IT/Data kết hợp ranh giới từ Regex `\b` (tránh nhầm lẫn các từ ngắn như "C", "R", "Go"). Tạo ra ma trận nhị phân $Jobs \times Skills$ tại `data/processed/skill_matrix.parquet`.
-   - **Chốt chặn hợp đồng 3 (`validate_skills`):** Bảo đảm ma trận kỹ năng chỉ chứa giá trị nhị phân $\{0, 1\}$ và không bị lỗi kiểu dữ liệu.
-   - **Phân luồng dữ liệu cho 3 bài toán nghiên cứu:**
-     - **Mô hình 1 (Apriori - Luật kết hợp) & Mô hình 2 (Clustering - Phân cụm công việc):** Sử dụng **100% dữ liệu** từ ma trận kỹ năng. Do hai mô hình này phân tích tổ hợp kỹ năng và cấu trúc phân nhóm nghề nghiệp tự nhiên, mọi tin tuyển dụng (kể cả có lương hay giấu lương) đều có giá trị đóng góp thông tin.
-     - **Mô hình 3 (Decision Tree - Phân lớp mức lương):** Đi theo đường nét đứt **"Chỉ tin có lương"** từ `jobs_clean.parquet`. Vì đây là mô hình học có giám sát (Supervised Learning) với nhãn mục tiêu là phân lớp thu nhập (`Low`, `Mid`, `High`), dữ liệu huấn luyện bắt buộc phải có thông tin mức lương rõ ràng (172/688 tin = 25,0%). Phần lớn tin tuyển dụng không công khai lương (516/688 = 75,0%) được tách riêng để phục vụ bài toán **Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)** ở Mục 2.6 nhằm đánh giá mức độ đại diện của mô hình.
+3. **Tầng 3 — Làm sạch & chuẩn hóa (Cleaning & Normalization)**
+   - **Dedup:** so từng cặp tin **trong cùng công ty** theo tiêu đề, JD và ngày đăng; bản trùng bị loại hẳn, bản còn lại có `is_duplicate = False`. Báo cáo + hình phễu `reports/figures/data_funnel.png`.
+   - **Chuẩn hóa lương:** `salary_raw` → `salary_min`, `salary_max` (triệu VND/tháng), `salary_status`, `currency_original`.
+   - **Chốt chặn 2 — `validate_clean()`:** `salary_status` thuộc enum; `full_range` có đủ 2 cận và `min ≤ max`; `one_sided` có đúng 1 cận; `undisclosed` không có cận.
+   - **Freeze (Mốc 2, 01/10):** `jobs_clean.parquet` (688 dòng) được ghi SHA-256 vào `docs/MANIFEST.json`; từ đây **không đổi schema**, mọi bước sau đọc đúng file này.
 
----
+4. **Tầng 4 — Trích đặc trưng & mô hình (Feature Engineering & Modeling)**
+   - **Ma trận kỹ năng:** `skills` quét `jd_text` bằng từ điển → ma trận nhị phân 0/1 (`int8`), bỏ kỹ năng < 5 tin và tin không có kỹ năng nào → `skill_matrix.parquet` (677 × 100). **Chốt chặn 3 — `validate_skills()`**: `job_id` duy nhất, chỉ chứa 0/1. Sau bước này phải chạy `make_manifest.py` để ghi hash mới.
+   - **Kiểm hash trước khi chạy model:** `cluster`, `classify`, `bias` đều đọc dữ liệu qua `load_and_verify_data()` — so SHA-256 của `jobs_clean` và `skill_matrix` với MANIFEST, **lệch thì dừng** (tránh dùng nhầm bản cũ).
+   - **Phân luồng cho 3 câu hỏi:**
+     - **Q1 (Apriori) và Q2 (clustering)** dùng **toàn bộ tin có kỹ năng** — có lương hay không đều mang thông tin về tổ hợp kỹ năng. Đầu ra: `data/processed/rules_train.csv`, `reports/rules_eval.md`; `data/processed/cluster_labels.csv` (cụm 1–5, nhiễu = −1), `reports/purity_report.md`, `dendrogram.png`.
+     - **Q3 (Decision Tree)** chỉ dùng **172 tin có lương** (học có giám sát cần nhãn lương), left join với ma trận kỹ năng để giữ đủ 172 tin. Đầu ra: `reports/classification_report.md`, `tree_cv_results.csv`, `tree_viz.png`, `confusion_matrix.png`, `models/tree_model.pkl`.
+     - **Bias analysis** so 172 tin có lương với **516 tin không lương** để xác định phạm vi áp dụng của Q3. Đầu ra: `reports/bias_analysis.md`, `bias_*.png`.
+   - **Trình bày:** `figures` xuất hình EDA (`eda_*.png`); `notebooks/final_notebook.ipynb` gọi lại đúng các hàm trong `src/models/`, đối chiếu số với report và xuất `reports/key_numbers.json` cho slide.
 
-### 2.2 Tiền xử lý & Chuẩn hóa dữ liệu (Data Preprocessing)
+Lệnh tương ứng: `scripts/run_pipeline.py` với các bước `crawl → parse → clean → skills → rules → cluster → classify → bias → figures → manifest`.
 
-#### Trích xuất bảng & Lưu trữ
-- Từ HTML thô, parser bóc tách các trường: `job_id`, `title`, `company`, `location`, `salary_raw`, `experience_raw`, `job_description`, `posted_date`, `url`.
-- Lưu trữ bằng định dạng **Apache Parquet (Snappy compression)** giúp tối ưu dung lượng đĩa và tốc độ truy vấn cột so với CSV thông thường.
+### 4.2 Tiền xử lý
 
-#### Khử trùng lặp đa tiêu chí (Deduplication)
-Một nhà tuyển dụng thường đăng lại cùng một vị trí tuyển dụng nhiều lần trong vòng vài ngày hoặc đăng biến thể của cùng một tiêu đề. Khử trùng lặp hoàn toàn bằng ID sẽ bỏ sót các bản ghi này. Thuật toán khử trùng lặp sử dụng bốn tiêu chuẩn:
-$$\text{IsDuplicate}(J_1, J_2) \iff \begin{cases} \text{company}_1 = \text{company}_2 \\ \text{SequenceMatcher}(\text{title}_1, \text{title}_2) \ge 0.85 \\ \text{SequenceMatcher}(\text{jd}_1, \text{jd}_2) \ge 0.95 \\ |\text{date}_1 - \text{date}_2| \le 7 \text{ ngày} \end{cases}$$
-Trong đó hàm tương đồng `difflib.SequenceMatcher` tính tỷ lệ Gestalt Pattern Matching giữa 2 tiêu đề (được chuẩn hóa lowercase và strip whitespace). Bản ghi mới hơn sẽ được giữ lại, bản trùng bị loại hẳn khỏi `jobs_clean.parquet` (các hàng còn lại có `is_duplicate = False` — `docs/DECISIONS.md` 30/09).
+- **Parse** (`src/parse/parser.py`): 11 cột `job_id, url, title, company, level, location, posted_date, category, salary_raw, jd_text, crawled_at`. `title`, `company`, `datePosted`, `baseSalary`, `addressRegion` lấy từ JSON-LD `JobPosting`; `category` = trường "Job Expertise"; `jd_text` chỉ gồm 2 mục "Job description" và "Your skills and experience". `job_id` = toàn bộ slug URL (4 số cuối không unique). `level` suy từ tiêu đề (ITviec không có trường cấp bậc) — suy được 57,6% số tin.
+- **Dedup** (`src/clean/dedup.py`): cùng công ty **và** tiêu đề giống ≥ 0,85 **và** JD giống ≥ 0,95 **và** ngày đăng cách ≤ 7 ngày (`difflib.SequenceMatcher`); giữ bản mới hơn. Điều kiện JD được thêm vì tiêu đề ITviec theo khuôn mẫu. Kết quả: 0 tin trùng.
+- **Lương** (`src/parse/salary.py`): quy đổi USD × 25.780 / 10⁶ (tỷ giá Vietcombank 29/09, A9); lương ngày × 20 (A18); không điều chỉnh gross/net (A14). Trạng thái `full_range` / `one_sided` / `undisclosed`. `salary_mid` = trung bình 2 cận (`full_range`) hoặc cận duy nhất (`one_sided`).
+- **Nhãn lương:** ngưỡng cố định 15/30 triệu chỉ cho 18/29/125 tin (lương ITviec cao) → **chia tertile** trên 172 tin có lương (Mốc 2, 01/10).
+- **Trích kỹ năng** (`src/skills/extractor.py`): từ điển `skill_dict.json` (114 kỹ năng, mỗi kỹ năng có alias). Khớp không phân biệt hoa thường với ranh giới `(?<![\w+#.])…(?![\w+#])` (giữ được `C++`, `C#`, `.NET`); các alias trùng từ tiếng Anh thông thường (`React`, `Spring`, `Excel`, `Go`, `Swift`) khớp **phân biệt hoa thường** (`Go` không khớp "Go-live"). Có alias dạng số nhiều (vd. "APIs"). Chỉ giữ kỹ năng xuất hiện ≥ 5 tin.
 
-#### Chuẩn hóa & Rời rạc hóa dải lương (Salary Normalization & Discretization)
-Với ITviec, chuỗi lương lấy từ JSON-LD `baseSalary` (giao diện ẩn lương sau đăng nhập — `docs/DECISIONS.md` 29/09). Chuỗi rất đa dạng: *"1,000 - 2,000 USD"*, *"Up To 35M Gross"*, *"30,000,000 - 50,000,000đ"*, *"Từ $100/ngày"*, *"You'll love it"* (= không công khai). Trên 172 tin có lương: 151 ghi USD, 21 ghi VND.
-- **Quy đổi ngoại tệ:** Chuẩn hóa USD về đơn vị VNĐ triệu đồng:
-  $$\text{VND (triệu)} = \frac{\text{USD} \times 25{,}780}{1{,}000{,}000}$$
-  (tỷ giá mua chuyển khoản Vietcombank ngày crawl 29/09 — `docs/ASSUMPTIONS.md` A9). Lương theo ngày quy về tháng bằng 20 ngày công (A18). Không điều chỉnh gross ↔ net vì phần lớn tin không ghi rõ (A14).
-- **Phân loại trạng thái lương (`salary_status`):**
-  - `full_range`: Có cả cận dưới `salary_min` và cận trên `salary_max`.
-  - `one_sided`: Chỉ có cận trên (*"Lên đến 30 triệu"*) hoặc chỉ có cận dưới (*"Từ 20 triệu"*).
-  - `undisclosed`: Lương không công khai (*"Thoả thuận"*, *"Cạnh tranh"*, chuỗi rỗng hoặc `None`).
-- **Lương đại diện (`salary_mid`):** Đối với các tin có đủ dải, tính trung bình:
-  $$\text{salary}_{\text{mid}} = \frac{\text{salary}_{\min} + \text{salary}_{\max}}{2}$$
-- **Rời rạc hóa (Binning):** Phân chia thành 3 phân lớp phục vụ bài toán phân lớp:
-  $$\text{SalaryGroup} = \begin{cases} \text{Low (< 15 triệu)} & \text{khi } \text{salary}_{\text{mid}} < 15 \\ \text{Mid (15 – 30 triệu)} & \text{khi } 15 \le \text{salary}_{\text{mid}} \le 30 \\ \text{High (> 30 triệu)} & \text{khi } \text{salary}_{\text{mid}} > 30 \end{cases}$$
-  > ⚠️ **Ngưỡng cố định 15/30 triệu không dùng được với dữ liệu ITviec** (lương cao, trung vị ≈ 38 triệu): trên 172 tin có lương chỉ cho Low 18 / Mid 29 / High 125, không đạt ≥50 mẫu/lớp. **Mốc 2 (01/10) đã chốt: GIỮ Decision Tree, chia 3 lớp theo tertile** trên 172 tin có lương (60 / 55 / 57 mẫu, ranh giới ≈ 32,2 / 50,0 triệu, tính bằng code từ dữ liệu); `one_sided` dùng cận duy nhất làm `salary_mid` (`docs/DECISIONS.md`).
+### 4.3 Q1 — Apriori
 
-#### Trích xuất kỹ năng bằng từ điển Regex (Skill Extraction)
-- Xây dựng từ điển `src/skills/skill_dict.json` gồm hơn 100 kỹ năng cốt lõi ngành IT/Data, phân cấp theo taxonomy: Programming Languages, Databases, Cloud & DevOps, Frameworks, Big Data & Analytics, AI/ML, Version Control.
-- Mỗi kỹ năng đi kèm danh sách alias (tên viết tắt, tên thay thế).
-- Khớp kỹ năng bằng Regex với ranh giới từ `\b` để tránh nhận diện sai (ví dụ: tránh nhận nhầm chữ "c" trong "company" là ngôn ngữ "C", hoặc "go" trong "good" là ngôn ngữ "Go"):
-  $$\text{Pattern}(k) = \text{Regex}\Big(\text{boundary} + \bigvee_{a \in \text{Aliases}(k)} \text{Escape}(a) + \text{boundary},\ \text{flags}=\text{IGNORECASE}\Big)$$
-  Cú pháp Python tương đương: `rf"\b({'|'.join(re.escape(a) for a in aliases)})\b"`
-- Kết quả tạo thành ma trận nhị phân $\mathbf{X} \in \{0, 1\}^{N \times M}$ với $N$ tin tuyển dụng và $M$ kỹ năng (lọc các kỹ năng xuất hiện $\ge 5$ lần).
+- Support, confidence, lift theo định nghĩa chuẩn; luật A→B và B→A cùng lift nên mỗi tập kỹ năng chỉ giữ luật có confidence cao hơn.
+- Sắp tin theo `posted_date` (sort ổn định, `job_id` làm khóa phụ): **70% cũ = train, 30% mới = test**.
+- Grid `min_support ∈ {0,03; 0,04; 0,05; 0,06; 0,10}`, lift > 1,2, confidence ≥ 0,5; chọn mức cho 20–100 luật. Thêm bảng riêng "luật có ít nhất 1 kỹ năng data" với `min_support` chọn theo số luật data.
+- Đánh giá: tỷ lệ luật vẫn đạt cả lift và confidence trên test.
 
----
+### 4.4 Q2 — Hierarchical Clustering
 
-### 2.3 Khai phá tập mẫu phổ biến & Luật kết hợp (Association Rule Mining — Apriori)
+- Khoảng cách **Jaccard** trên vector kỹ năng nhị phân.
+- Trước khi phân cụm: bỏ kỹ năng mềm/công cụ quản lý, kỹ năng xuất hiện > 40% hoặc < 10 tin, và tin còn < 2 kỹ năng.
+- **Weighted linkage (WPGMA):** Ward không hợp lệ với Jaccard; average bị chaining (1 cụm 95% tin); complete không cắt được (42% cặp tin có khoảng cách = 1).
+- **Chọn k (đặt trước khi xem kết quả):** k ∈ 4–8; cụm < 15 tin coi là **nhiễu** (nhãn −1); k hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn silhouette cao nhất.
+- **Purity** và F-measure so với "Job Expertise" gộp 72 giá trị → 10 nhóm (`src/models/expertise_groups.json`, A16 đã review).
 
-Bài toán: Tìm các tập kỹ năng $X$ và $Y$ sao cho khi $X$ xuất hiện trong JD thì khả năng $Y$ cũng xuất hiện là rất cao.
+### 4.5 Q3 — Decision Tree
 
-#### Các độ đo toán học:
-1. **Độ hỗ trợ (Support):** Tỷ lệ tin tuyển dụng chứa đồng thời cả tập kỹ năng $X$ và $Y$:
-   $$\text{Support}(X \to Y) = P(X \cup Y) = \frac{\sigma(X \cup Y)}{N}$$
-2. **Độ tin cậy (Confidence):** Xác suất có điều kiện tin tuyển dụng chứa $Y$ khi đã biết tin đó yêu cầu $X$:
-   $$\text{Confidence}(X \to Y) = P(Y \mid X) = \frac{\text{Support}(X \cup Y)}{\text{Support}(X)}$$
-3. **Độ nâng (Lift):** Đo lường mức độ độc lập hay tương quan tích cực giữa $X$ và $Y$:
-   $$\text{Lift}(X \to Y) = \frac{P(X \cup Y)}{P(X) \times P(Y)} = \frac{\text{Confidence}(X \to Y)}{\text{Support}(Y)}$$
-   - $\text{Lift} = 1$: $X$ và $Y$ độc lập ngẫu nhiên.
-   - $\text{Lift} > 1$: $X$ và $Y$ có mối liên hệ cộng hưởng mạnh mẽ (kỹ năng bổ trợ thực sự).
+- Feature: kỹ năng (≥ 5 lần trong 172 tin), cấp bậc one-hot (`Intern/Junior`, `Middle`, `Senior`, `Lead`, `Manager`, `Unknown`), địa điểm multi-hot (HCM/HN/ĐN/khác). Không có số năm kinh nghiệm.
+- **Nested CV:** vòng ngoài 5 fold (đánh giá), vòng trong 3 fold chọn `max_depth ∈ {3,4,5,6}`, `min_samples_leaf ∈ {5,10,15}`. Accuracy, confusion matrix và bootstrap CI (1.000 lần) tính trên dự đoán out-of-fold; so với baseline (đoán lớp đông nhất).
+- Mô hình cuối: bộ tham số được chọn nhiều nhất (hoà → cây nông hơn), lưu `models/tree_model.pkl` + metadata.
 
-#### Chiến lược đánh giá bền vững (Temporal Train/Test Split):
-Thay vì khai phá trên toàn bộ tập dữ liệu dẫn đến nguy cơ overfit vào các mẫu ngẫu nhiên:
-- Sắp xếp dữ liệu theo `posted_date`. Chia **70% tin cũ làm Train Set** và **30% tin mới hơn làm Test Set**.
-- Khai phá luật trên Train Set với `min_support` $\in \{0.03, 0.04, 0.05, 0.06, 0.10\}$, lọc `lift > 1.2` và `confidence ≥ 0.5`; chọn mức cho ra 20–100 luật. Thêm bảng riêng cho luật có ít nhất 1 kỹ năng data (`reports/rules_eval.md`).
-- Thứ tự luật và ranh giới train/test được cố định (sort ổn định theo `posted_date` + `job_id`) để kết quả tái lập được.
-- Kiểm chứng lại Support và Confidence của các luật trên Test Set để đánh giá tính ổn định theo thời gian của nhu cầu thị trường.
+### 4.6 Bias analysis
+
+So sánh 172 tin có lương với 516 tin không lương: kỹ năng (Fisher exact + Benjamini–Hochberg), địa điểm (Fisher + BH), cấp bậc (chi-square). Tiền tệ chỉ mô tả nhóm có lương (tin không lương không có thông tin tiền tệ).
 
 ---
 
-### 2.4 Phân cụm vị trí việc làm (Hierarchical Agglomerative Clustering — HAC)
+## 5. Hạn chế
 
-Bài toán: Không áp đặt số cụm trước, tìm cách nhóm các tin tuyển dụng dựa trên mức độ tương đồng của profile kỹ năng.
-
-#### Không gian khoảng cách Jaccard:
-Vì mỗi tin tuyển dụng là một vector nhị phân sparse các kỹ năng, khoảng cách Euclidean truyền thống không phù hợp (do việc cả 2 tin đều *không* có một kỹ năng hiếm không mang ý nghĩa rằng chúng tương đồng). Thay vào đó, sử dụng **Jaccard Distance**:
-$$d_J(\mathbf{u}, \mathbf{v}) = 1 - \frac{|\mathbf{u} \cap \mathbf{v}|}{|\mathbf{u} \cup \mathbf{v}|} = 1 - \frac{f_{11}}{f_{01} + f_{10} + f_{11}}$$
-trong đó $f_{11}$ là số lượng kỹ năng cả 2 tin đều yêu cầu, $f_{01}$ và $f_{10}$ là số kỹ năng chỉ một trong hai tin yêu cầu.
-
-#### Thuật toán Gom cụm phân cấp (HAC) & Cắt cây (Dendrogram Truncation):
-- Bắt đầu với mỗi tin là một cụm riêng lẻ.
-- Gom dần các cụm gần nhau nhất theo **Weighted Linkage (WPGMA)**. Ward không hợp lệ với Jaccard; Average bị hiện tượng chaining (1 cụm chứa 95% tin) — xem `docs/DECISIONS.md` 03/10.
-- Trước khi phân cụm: bỏ kỹ năng mềm/công cụ quản lý, kỹ năng xuất hiện > 40% số tin hoặc < 10 tin, và tin còn < 2 kỹ năng.
-- Trực quan hóa Dendrogram; $k \in [4, 8]$; cụm < 15 tin coi là nhiễu (nhãn -1); $k$ hợp lệ khi có ≥ 3 cụm thật và nhiễu ≤ 5%; chọn $k$ có Silhouette cao nhất (DECISIONS 04/10). Purity tính trên tin không phải nhiễu.
-
-#### Đánh giá độ tinh khiết phân cụm (Cluster Purity):
-Để kiểm chứng xem các cụm kỹ năng tự nhiên có tương ứng với các chức danh thực tế trên thị trường hay không, so sánh nhãn cụm $C = \{c_1, c_2, \dots, c_k\}$ với nhãn danh mục thực tế của ITviec $T = \{t_1, t_2, \dots, t_J\}$:
-$$\text{Purity}(C, T) = \frac{1}{N} \sum_{k} \max_j |c_k \cap t_j|$$
-Độ tinh khiết càng tiến gần 1.0 cho thấy các cụm kỹ năng phân lập ranh giới nghề nghiệp càng rõ ràng và khớp với thực tiễn.
+- **Dữ liệu:** 688 tin (dưới ngưỡng 1.000 đặt ra ban đầu), 1 nguồn, 1 snapshot. Chia train/test theo ngày đăng trên snapshot đo **tuổi của tin** (tin cũ còn active vs tin mới), không đo thay đổi thị trường dài hạn.
+- **Lương:** chỉ 25% tin công bố lương, nghiêng về Hà Nội; 88% ghi USD (phụ thuộc tỷ giá cố định); không phân biệt gross/net; **phụ cấp thực tập** nằm lẫn trong dữ liệu lương.
+- **Từ điển kỹ năng:** độ phủ **72,6%** trên bộ 20 JD kiểm tra độc lập (dưới ngưỡng 80% dự kiến); phần sót là công cụ ngách và kỹ năng mềm diễn đạt tự do.
+- **Cấp bậc:** suy từ tiêu đề, 42% tin không suy được (`Unknown`).
+- **Phân cụm:** silhouette ~0,07 và **nhạy với từ điển** (thêm alias số nhiều buộc phải đổi quy tắc chọn k — `docs/DECISIONS.md` 04/10).
+- **Decision Tree:** 172 mẫu nên CI rộng; nhiều lá < 10 tin.
 
 ---
 
-### 2.5 Phân lớp dự đoán dải lương & Tầm quan trọng đặc trưng (Decision Tree Classification)
+## 6. Chất lượng & quản trị dữ liệu
 
-Bài toán: Dự đoán mức thu nhập thuộc phân lớp `Low`, `Mid`, hay `High` (tertile — DECISIONS Mốc 2) dựa trên tổ hợp kỹ năng, cấp bậc và khu vực địa lý.
-
-#### Kiến trúc mô hình:
-- Thuật toán: **Decision Tree Classifier (CART)**.
-- Tiêu chí phân nhánh: Gini Impurity:
-  $$I_G(p) = 1 - \sum_{i=1}^{C} p_i^2$$
-- Ưu điểm cốt lõi: Mô hình dạng cây có khả năng **giải thích cao (High Interpretability)**, mô phỏng trực quan logic ra quyết định tuyển dụng và mức định giá kỹ năng của thị trường.
-
-#### Kỹ thuật kiểm thử & Kiểm soát Overfitting:
-- **Nested Stratified Cross-Validation:** vòng ngoài 5 fold để đánh giá (accuracy + confusion matrix trên dự đoán out-of-fold, 95% bootstrap CI), vòng trong 3 fold để chọn siêu tham số.
-- **Tối ưu hóa siêu tham số (Hyperparameter Pruning):** `max_depth` $\in \{3, 4, 5, 6\}$, `min_samples_leaf` $\in \{5, 10, 15\}$ để tránh cây quá sâu học vẹt dữ liệu.
-- **Đặc trưng thực tế:** kỹ năng (≥ 5 lần trong 172 tin có lương), cấp bậc suy từ tiêu đề (one-hot, gộp Intern/Fresher/Junior → `Intern/Junior`, có `Unknown`), địa điểm (multi-hot). ITviec không có trường số năm kinh nghiệm.
-- **Trích xuất Feature Importance:** Đánh giá kỹ năng hoặc cấp bậc nào đóng vai trò giảm thiểu độ bất định (impurity) lớn nhất trong việc dự đoán lương.
+| Cơ chế | Chi tiết |
+|---|---|
+| Data contract | `src/contract.py`: `validate_parsed`, `validate_clean`, `validate_skills` — dừng ngay nếu sai schema (`docs/DATA_CONTRACT.md`) |
+| Freeze + SHA-256 | `docs/MANIFEST.json` cho file processed; code model **tự kiểm hash** và dừng nếu lệch (`src/models/features.py`). Hash tổng 688 file HTML thô trong `docs/governance.md` |
+| Tái lập | Thứ tự luật, chia train/test, `random_state` cố định; kết quả giống hệt giữa các `PYTHONHASHSEED` |
+| Test | 121 test (`tests/`): contract, parser, dedup, lương, kỹ năng, Apriori, clustering, Decision Tree, bias, A7, viz |
+| Quyết định & giả định | `docs/DECISIONS.md`, `docs/ASSUMPTIONS.md` (A1–A18) |
+| Governance | `docs/governance.md`: User-Agent, rate limit, ToS/robots.txt, backup, quyền truy cập, dữ liệu cá nhân |
 
 ---
 
-### 2.6 Phân tích thiên lệch dữ liệu (Missing Data Bias Analysis)
-
-Trên dữ liệu ITviec 29/09, 516/688 tin (75%) không công bố lương. Do đó, việc xây dựng mô hình dự đoán lương trên tập tin có lương có thể dẫn đến **Selection Bias (Thiên lệch chọn mẫu)**:
-- Nhóm tin công khai lương có thể chủ yếu là tin Junior / Fresher hoặc các doanh nghiệp có thang lương cố định.
-- Nhóm tin giấu lương có thể tập trung các vị trí Tech Lead, Solution Architect hoặc đãi ngộ đặc thù.
-
-Để đảm bảo tính khoa học và đạo đức nghiên cứu dữ liệu, dự án tiến hành **phân tích so sánh 2 nhóm tin (Disclosed vs. Undisclosed)** trên 3 chiều (`reports/bias_analysis.md`):
-1. Kỹ năng: Fisher exact cho từng kỹ năng, hiệu chỉnh Benjamini–Hochberg.
-2. Địa điểm: Fisher exact + Benjamini–Hochberg (multi-hot HCM / HN / ĐN / khác).
-3. Cấp bậc (suy từ tiêu đề): Chi-square.
-(ITviec không có số năm kinh nghiệm hay quy mô công ty trong dữ liệu đã parse, nên không so sánh hai chiều này.)
-Kết quả so sánh này được ghi nhận tường minh trong báo cáo để xác định rõ giới hạn tin cậy của mô hình phân lớp.
-
----
-
-## 3. Đảm Bảo Chất Lượng & Quản Trị Dữ Liệu (Data Contract & Governance)
-
-Nhằm đảm bảo 5 thành viên và các AI coding agents làm việc độc lập không phá vỡ tính tương thích của pipeline, dự án áp dụng hệ thống **Data Contracts** nghiêm ngặt tại `src/contract.py`:
-
-| Lớp dữ liệu | Hàm kiểm định | Quy chuẩn kiểm tra |
-| :--- | :--- | :--- |
-| **Parsed Layer** | `validate_parsed(df)` | Đủ các cột bắt buộc (`job_id`, `url`, `title`, `company`, `jd_text`, `crawled_at`), không null; `job_id` là khóa chính duy nhất, không null; `title` và `company` không null. |
-| **Clean Layer** | `validate_clean(df)` | `salary_status` thuộc tập `{'full_range', 'one_sided', 'undisclosed'}`; `salary_min`/`salary_max` nếu có thì > 0; tin `full_range` bắt buộc có `salary_min <= salary_max`; tin `one_sided` có đúng một cận; tin `undisclosed` có `salary_min`, `salary_max` là null. (`salary_mid` không lưu trong file, tính ở bước model.) |
-| **Skill Layer** | `validate_skills(df)` | Cột đầu tiên là `job_id`; tất cả các cột kỹ năng còn lại chỉ chứa giá trị nhị phân $\{0, 1\}$; có ít nhất một cột kỹ năng. |
-
----
-
-## 4. Cấu Trúc Thư Mục Dự Án
+## 7. Cấu trúc thư mục
 
 ```text
-fund_ds/
-├── CLAUDE.md                   # Chỉ dẫn vận hành cho AI Coding Agents
-├── Makefile                    # Lệnh tự động hóa pipeline và kiểm thử
-├── pyproject.toml              # Cấu hình môi trường pytest
-├── requirements.txt            # Danh sách thư viện phụ thuộc
-├── README.md                   # Tài liệu mô tả bài toán và phương pháp luận
-│
-├── data/                       # Dữ liệu dự án (KHÔNG commit file lớn)
-│   ├── raw/                    # Snapshot HTML thô từ ITviec (.gitkeep)
-│   ├── interim/                # Dữ liệu trung gian: jobs_parsed (.gitkeep)
-│   └── processed/              # Dữ liệu đã sẵn sàng mô hình: jobs_clean, skill_matrix (.gitkeep)
-│
-├── docs/                       # Tài liệu thiết kế & phân rã công việc
-│   ├── DATA_CONTRACT.md        # Đặc tả chi tiết schema 4 tầng dữ liệu
-│   ├── DECISIONS.md            # Sổ tay ghi chép quyết định kỹ thuật
-│   ├── ASSUMPTIONS.md          # Giả định và cách kiểm chứng (A10–A17: nguồn ITviec & kết quả pilot)
-│   ├── tos_review.md           # Bằng chứng TopCV (No-Go) & ITviec (Go, pilot 20 tin — mục 10)
-│   ├── WORKFLOW.md             # Quy tắc phối hợp nhánh Git & xử lý xung đột
-│   ├── STANDUP.md              # Mẫu báo cáo tiến độ hàng ngày
-│   └── tasks/                  # Bảng giao việc chi tiết cho 5 vai trò
-│
-├── notebooks/                  # Jupyter notebooks phân tích & demo (.gitkeep)
+Labor-Market-Intelligence/
+├── CLAUDE.md, README.md, Makefile, requirements.txt, pyproject.toml
+├── data/                          # gitignore — dữ liệu trên Google Drive
+│   ├── crawl_log.csv              # log request (đã commit, bằng chứng rate limit)
+│   ├── raw/                       # 688 file HTML thô (không commit)
+│   ├── interim/jobs_parsed.parquet
+│   └── processed/                 # jobs_clean (freeze), skill_matrix, rules_train, cluster_labels
+├── docs/
+│   ├── DATA_CONTRACT.md, DECISIONS.md, ASSUMPTIONS.md, MANIFEST.json
+│   ├── governance.md, tos_review.md, WORKFLOW.md, STANDUP.md
+│   └── tasks/                     # brief từng vai
+├── src/
+│   ├── contract.py
+│   ├── crawl/crawler.py
+│   ├── parse/parser.py, salary.py
+│   ├── clean/dedup.py
+│   ├── skills/extractor.py, skill_dict.json, __main__.py
+│   ├── models/apriori.py, features.py, clustering.py, classification.py, bias_analysis.py, expertise_groups.json
+│   └── viz/eda.py, __main__.py
+├── notebooks/                     # eda_draft, eda_full, final_notebook, demo
 ├── reports/
-│   └── figures/                # Biểu đồ kết xuất tự động cho báo cáo (.gitkeep)
-│
-├── scripts/                    # Scripts thực thi tự động
-│   ├── generate_fixtures.py    # Sinh dữ liệu mẫu đạt chuẩn hợp đồng để dev
-│   ├── make_manifest.py        # Tạo chữ ký băm SHA-256 đóng băng dữ liệu
-│   └── run_pipeline.py         # Bộ điều phối chạy toàn bộ 12 bước pipeline
-│
-├── src/                        # Mã nguồn ứng dụng
-│   ├── contract.py             # Bộ quy chuẩn kiểm thử hợp đồng dữ liệu
-│   ├── crawl/                  # Module thu thập sitemap và HTML
-│   ├── parse/                  # Module phân tích cú pháp HTML & bóc tách lương
-│   │   └── salary.py           # Parser chuẩn hóa dải lương đa định dạng
-│   ├── clean/                  # Module làm sạch dữ liệu
-│   │   └── dedup.py            # Thuật toán khử trùng tin tuyển dụng đa tiêu chí
-│   ├── skills/                 # Module trích xuất kỹ năng
-│   │   ├── extractor.py        # Bộ trích xuất kỹ năng bằng Regex Boundary
-│   │   └── skill_dict.json     # Từ điển >100 kỹ năng IT/Data & Aliases
-│   ├── models/                 # Module huấn luyện Apriori, HAC, Decision Tree
-│   └── viz/                    # Module vẽ biểu đồ chuẩn báo cáo
-│
-└── tests/                      # Bộ kiểm thử tự động toàn diện
-    ├── fixtures/               # Dữ liệu mẫu kiểm thử đã xác thực
-    ├── test_contract.py        # Kiểm thử các ràng buộc của Data Contract
-    ├── test_dedup.py           # Kiểm thử thuật toán khử trùng lặp
-    ├── test_parse_salary.py    # Kiểm thử logic bóc tách lương đa trường hợp
-    └── test_skills.py          # Kiểm thử logic trích xuất kỹ năng & ma trận
+│   ├── rules_eval.md, purity_report.md, classification_report.md, bias_analysis.md
+│   ├── dedup_report.md, A7_evaluation*.md, a7_manual_labels*.csv, tree_cv_results.csv
+│   ├── key_numbers.json           # số liệu cho slide (sinh từ final_notebook)
+│   └── figures/                   # 24 hình: eda_*, model_*, dendrogram, tree_viz, confusion_matrix, bias_*
+├── models/tree_model.pkl, tree_model_meta.json
+├── scripts/run_pipeline.py, make_manifest.py, verify_a7.py, generate_fixtures.py
+└── tests/                         # pytest + fixtures
 ```
 
 ---
 
-## 5. Hướng Dẫn Cài Đặt & Chạy Thử
+## 8. Cài đặt & chạy
 
-### 5.1 Cài đặt môi trường
-Yêu cầu: **Python 3.11+**. Khuyến nghị sử dụng môi trường ảo:
+### 8.1 Cài đặt
+
+Yêu cầu **Python 3.11+**.
+
 ```bash
-# Tạo và kích hoạt môi trường ảo (tùy chọn)
 python -m venv .venv
-source .venv/bin/activate  # Trên Linux/macOS
-.venv\Scripts\activate     # Trên Windows
-
-# Cài đặt các thư viện cần thiết
-pip install -r requirements.txt
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt    # gồm cả Jupyter, ipywidgets cho notebook
 ```
 
-### 5.2 Chạy bộ kiểm thử tự động (Unit Tests)
-Dự án được bảo vệ bởi 48 unit tests kiểm định toàn bộ hợp đồng dữ liệu và các hàm nghiệp vụ:
+### 8.2 Test
+
 ```bash
-python -m pytest -v
+python -m pytest -q                # 121 passed
 ```
 
-### 5.3 Chạy thử nghiệm Pipeline với dữ liệu mẫu (Mock Pipeline)
-Để kiểm tra tính toàn vẹn của luồng xử lý từ đầu đến cuối:
-```bash
-# 1. Sinh dữ liệu mẫu chuẩn hợp đồng
-python scripts/generate_fixtures.py
+Một số test dùng dữ liệu thật sẽ tự `skip` nếu chưa có file trong `data/processed/`.
 
-# 2. Tạo manifest kiểm kê và băm dữ liệu SHA-256
+### 8.3 Chạy lại phần model (từ dữ liệu đã freeze)
+
+Tải `jobs_clean.parquet` từ Drive nhóm vào `data/processed/` và kiểm hash với `docs/MANIFEST.json`, rồi:
+
+```bash
+python scripts/run_pipeline.py skills
+python scripts/make_manifest.py              # bắt buộc ngay sau `skills` — các bước model kiểm hash
+for s in rules cluster classify bias figures; do python scripts/run_pipeline.py $s || break; done
 python scripts/make_manifest.py
+```
 
-# 3. Chạy toàn bộ pipeline điều phối
-python scripts/run_pipeline.py
+Chạy lại từ đầu (`crawl` → `parse` → `clean`) cần 688 file HTML trong `data/raw/` (trên Drive) và biến môi trường `CRAWL_CONTACT=<email nhóm>`; **không cần crawl lại** vì dữ liệu đã freeze.
+
+**Kiểm tra toàn vẹn** (không dùng `make_manifest.py` để kiểm tra, vì nó ghi đè MANIFEST):
+
+```bash
+sha256sum data/processed/*.parquet data/processed/*.csv   # so với docs/MANIFEST.json
+```
+
+### 8.4 Notebook
+
+```bash
+jupyter notebook notebooks/final_notebook.ipynb    # EDA + 3 mô hình + bias, xuất reports/key_numbers.json
+jupyter notebook notebooks/demo.ipynb              # demo tương tác (ipywidgets)
 ```
