@@ -66,3 +66,22 @@ def test_apriori_and_fpgrowth_give_identical_rules():
     data = pd.DataFrame({"x": base, "y": base | (rng.random(200) < 0.1), "z": rng.random(200) < 0.4})
     table = cmp.compare_apriori_fpgrowth(data, supports=[0.1, 0.2], repeats=1)
     assert table["same_itemsets"].all() and table["same_rules"].all()
+
+
+def test_paired_bootstrap_clustering_zero_for_identical_labels():
+    rng = np.random.default_rng(3)
+    labels = rng.integers(1, 4, 120)
+    groups = np.array(["A", "B", "C"])[rng.integers(0, 3, 120)]
+    out = cmp.paired_bootstrap_clustering(labels, labels, groups, n=30)
+    assert (out["diff"] == 0).all() and (out["ci_low"] == 0).all() and (out["ci_high"] == 0).all()
+
+
+@pytest.mark.parametrize("method", ["weighted", "kmeans"])
+def test_clustering_stability_is_perfect_on_well_separated_data(method):
+    # 3 disjoint skill blocks, 40 jobs each → every method should recover the same clusters on any subsample
+    blocks = np.zeros((120, 9), dtype=bool)
+    for b in range(3):
+        blocks[b * 40:(b + 1) * 40, b * 3:(b + 1) * 3] = True
+    M = pd.DataFrame(blocks, columns=[f"s{i}" for i in range(9)])
+    scores = cmp.clustering_stability(M, k=3, method=method, n=5)
+    assert np.allclose(scores, 1.0)

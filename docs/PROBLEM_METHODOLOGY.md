@@ -86,7 +86,7 @@ Pipeline xử lý theo mô hình 4 tầng độc lập:
 
 ### So sánh với phương pháp khác (yêu cầu giảng viên, DECISIONS 04/10)
 - **Q3:** so Decision Tree với baseline lớp đông nhất, cây chỉ dùng cấp bậc, logistic regression, Bernoulli naive Bayes, k-NN (Jaccard), random forest, gradient boosting — cùng nested CV và cùng seed; báo cáo CI bootstrap và CI ghép cặp của hiệu accuracy.
-- **Q2:** so HAC weighted với HAC average/complete, K-means, HDBSCAN — cùng ma trận và quy tắc nhiễu; độ ổn định bằng ARI trên 50 mẫu con 80%.
+- **Q2:** so HAC weighted với HAC average/complete, K-means, HDBSCAN — cùng ma trận và quy tắc nhiễu; bootstrap ghép cặp purity/ARI giữa HAC weighted và K-means; độ ổn định bằng ARI trên cùng 50 mẫu con 80% cho mọi phương pháp có k hợp lệ.
 - **Q1:** Apriori vs FP-Growth (cùng luật, so thời gian).
 - Mô hình dựa trên mô hình ngôn ngữ (transformer) chỉ nêu ở phần related work vì 172 tin có nhãn là quá ít và khó giải thích.
 - Kết quả: `reports/model_comparison.md`.

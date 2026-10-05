@@ -321,6 +321,29 @@
       }
     },
     "q2_stability_ari_mean": 0.345,
+    "q2_stability_by_method": {
+      "HAC weighted linkage (Jaccard)": 0.345,
+      "HAC average linkage (Jaccard)": 0.454,
+      "K-means (binary vectors)": 0.63
+    },
+    "q2_hac_minus_kmeans": {
+      "purity": {
+        "diff": -0.052,
+        "ci95": [
+          -0.108,
+          -0.019
+        ],
+        "significant": true
+      },
+      "ari": {
+        "diff": -0.028,
+        "ci95": [
+          -0.072,
+          0.002
+        ],
+        "significant": false
+      }
+    },
     "q2_stability_ari_p5_p95": [
       0.169,
       0.599

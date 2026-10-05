@@ -109,8 +109,9 @@ Cùng dữ liệu, cùng cách chia fold và cùng thước đo với model củ
 | K-means (vector nhị phân) | 7 | 0% | 0,059 | **0,374** | **0,107** |
 | HDBSCAN (Jaccard) | 4 | 23,7% (vượt ngưỡng 5%) | 0,036 | 0,228 | 0,026 |
 
-- Không phương pháp nào tìm được cấu trúc rõ (silhouette đều gần 0). K-means khớp nhóm nghề tốt hơn một chút, weighted HAC có silhouette cao gần nhất.
-- **Độ ổn định** của model dự án: ARI giữa phân cụm trên toàn bộ dữ liệu và 50 mẫu con 80% — trung bình **0,345** (5–95%: 0,169–0,599) → phân cụm thay đổi đáng kể khi dữ liệu thay đổi.
+- Không phương pháp nào tìm được cấu trúc rõ (silhouette đều gần 0).
+- **Bootstrap ghép cặp HAC weighted − K-means** (giữ nguyên 2 cách phân cụm, lấy mẫu lại tin 1.000 lần): purity −0,052 (95% CI −0,108 – −0,019) → **K-means cao hơn có ý nghĩa**; ARI −0,028 (CI −0,072 – +0,002) → **không khác biệt có ý nghĩa**. Purity tự tăng khi nhiều cụm hơn (K-means 7 cụm, HAC 5), còn ARI đã hiệu chỉnh điều này.
+- **Độ ổn định** (ARI giữa phân cụm trên toàn bộ dữ liệu và cùng 50 mẫu con 80%): HAC weighted **0,345**, HAC average 0,454, **K-means 0,630** → K-means ổn định hơn rõ rệt.
 
 **Q1 — Apriori vs FP-Growth:** cho **cùng tập itemset và luật** ở mọi `min_support`; trên dữ liệu nhỏ này FP-Growth **chậm hơn** 2,4–3,4 lần (chi phí dựng cây FP lấn át; FP-Growth có lợi trên dữ liệu lớn hơn).
 
@@ -288,7 +289,7 @@ So sánh 172 tin có lương với 516 tin không lương: kỹ năng (Fisher ex
 - **Cấp bậc:** suy từ tiêu đề, 42% tin không suy được (`Unknown`).
 - **Phân cụm:** silhouette ~0,07 và **nhạy với từ điển** (thêm alias số nhiều buộc phải đổi quy tắc chọn k — `docs/DECISIONS.md` 04/10).
 - **Decision Tree:** 172 mẫu nên CI rộng; nhiều lá < 10 tin; không tốt hơn có ý nghĩa so với các classifier khác, và cây chỉ dùng cấp bậc cho kết quả tương đương (`reports/model_comparison.md`).
-- **Độ ổn định phân cụm:** ARI trung bình 0,345 giữa các mẫu con 80% — các cụm cụ thể không nên coi là kết luận chắc chắn.
+- **Độ ổn định phân cụm:** HAC weighted (model dự án) chỉ 0,345 ARI giữa các mẫu con 80%, kém K-means (0,630); K-means cũng có purity cao hơn có ý nghĩa — các cụm cụ thể của HAC không nên coi là kết luận chắc chắn.
 
 ---
 

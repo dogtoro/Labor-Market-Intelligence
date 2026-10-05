@@ -217,19 +217,67 @@ def compare_clustering(skills_df: pd.DataFrame, groups_by_job: pd.Series):
     return table, labels, M, D
 
 
+# method key used by clustering_stability for each compared method with a chosen k
+STABILITY_METHODS = {
+    "HAC weighted linkage (Jaccard)": "weighted",
+    "HAC average linkage (Jaccard)": "average",
+    "K-means (binary vectors)": "kmeans",
+}
+
+
+def _fit_labels(X: np.ndarray, k: int, method: str) -> np.ndarray:
+    """Cluster boolean rows with one method at k clusters, then apply the project's noise rule."""
+    if method == "kmeans":
+        raw = KMeans(n_clusters=k, n_init=10, random_state=RANDOM_STATE).fit_predict(X.astype(float))
+    else:
+        raw = fcluster(linkage(pdist(X, metric="jaccard"), method=method), k, criterion="maxclust")
+    return cl.assign_noise(raw)
+
+
 def clustering_stability(M: pd.DataFrame, k: int, method: str = "weighted",
                          n: int = N_STABILITY, frac: float = STABILITY_FRAC) -> np.ndarray:
-    """ARI between the full-data clustering and clusterings of random 80% subsamples (same k, same noise rule)."""
-    full = cl.assign_noise(fcluster(linkage(pdist(M.to_numpy(), metric="jaccard"), method=method), k,
-                                    criterion="maxclust"))
+    """ARI between the full-data clustering and clusterings of random 80% subsamples (same k, same noise rule).
+
+    The same subsamples (same seed) are used for every method, so the scores are directly comparable.
+    """
+    X = M.to_numpy()
+    full = _fit_labels(X, k, method)
     rng = np.random.default_rng(RANDOM_STATE)
     scores = []
     for _ in range(n):
         idx = np.sort(rng.choice(len(M), size=int(frac * len(M)), replace=False))
-        sub = cl.assign_noise(fcluster(linkage(pdist(M.to_numpy()[idx], metric="jaccard"), method=method), k,
-                                       criterion="maxclust"))
-        scores.append(adjusted_rand_score(full[idx], sub))
+        scores.append(adjusted_rand_score(full[idx], _fit_labels(X[idx], k, method)))
     return np.array(scores)
+
+
+def _purity_ari(labels: np.ndarray, groups: np.ndarray) -> tuple[float, float]:
+    keep = labels != cl.NOISE_LABEL
+    purity, _, _ = cl.calculate_purity_fmeasure(pd.crosstab(labels[keep], groups[keep]))
+    return purity, adjusted_rand_score(groups[keep], labels[keep])
+
+
+def paired_bootstrap_clustering(labels_a: np.ndarray, labels_b: np.ndarray, groups: np.ndarray,
+                                n: int = clf.N_BOOTSTRAP) -> pd.DataFrame:
+    """Paired bootstrap of purity and ARI for two fixed clusterings of the same jobs.
+
+    Each resample draws jobs with replacement (same seeds as classification.bootstrap_ci) and scores both
+    clusterings on the same jobs (each on its own non-noise jobs). Returns value of a, value of b, a − b and
+    the 95% CI of a − b for each metric.
+    """
+    idx_all = np.arange(len(groups))
+    diffs = {"purity": [], "ari": []}
+    for i in range(n):
+        s = resample(idx_all, replace=True, random_state=RANDOM_STATE + i)
+        pa, aa = _purity_ari(labels_a[s], groups[s])
+        pb, ab = _purity_ari(labels_b[s], groups[s])
+        diffs["purity"].append(pa - pb)
+        diffs["ari"].append(aa - ab)
+    full_a, full_b = _purity_ari(labels_a, groups), _purity_ari(labels_b, groups)
+    rows = []
+    for j, metric in enumerate(("purity", "ari")):
+        rows.append({"metric": metric, "a": full_a[j], "b": full_b[j], "diff": full_a[j] - full_b[j],
+                     "ci_low": np.percentile(diffs[metric], 2.5), "ci_high": np.percentile(diffs[metric], 97.5)})
+    return pd.DataFrame(rows).set_index("metric")
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +412,11 @@ def run_comparison():
     assert (committed.loc[M.index, "cluster"].to_numpy() == clu_labels[project]).all(), \
         "weighted HAC re-run differs from cluster_labels.csv"
     k_cut = int(clu_table.loc[project, "k"])
-    stability = clustering_stability(M, k_cut)
+    stabilities = {name: clustering_stability(M, int(clu_table.loc[name, "k"]), method)
+                   for name, method in STABILITY_METHODS.items() if clu_table.loc[name, "valid"]}
+    stability = stabilities[project]
+    groups = groups_by_job.reindex(M.index).to_numpy()
+    cluster_paired = paired_bootstrap_clustering(clu_labels[project], clu_labels["K-means (binary vectors)"], groups)
 
     # Q1
     df = skills_df.merge(jobs_df[["job_id", "posted_date"]], on="job_id")
@@ -377,11 +429,48 @@ def run_comparison():
     plot_classifiers(clf_table, FIG_DIR / "model_compare_classifiers.png")
     plot_clustering(clu_table, FIG_DIR / "model_compare_clustering.png")
     plot_apriori(rules_table, FIG_DIR / "model_compare_apriori_fpgrowth.png")
-    write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs=len(X), n_clustered=len(M))
-    return clf_table, clu_table, stability, rules_table
+    write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs=len(X), n_clustered=len(M),
+                 stabilities=stabilities, cluster_paired=cluster_paired)
+    return clf_table, clu_table, stability, rules_table, stabilities, cluster_paired
 
 
-def write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs, n_clustered):
+def _stability_lines(stabilities, clu_table) -> list[str]:
+    if not stabilities:
+        return []
+    lines = ["### Stability (same 50 subsamples of 80% for every method)", "",
+             "| Method | k | mean ARI | 5th–95th percentile |", "|---|---|---|---|"]
+    for name, sc in stabilities.items():
+        lines.append(f"| {name} | {int(clu_table.loc[name, 'k'])} | {sc.mean():.3f} | "
+                     f"{np.percentile(sc, 5):.3f}–{np.percentile(sc, 95):.3f} |")
+    best = max(stabilities, key=lambda n: stabilities[n].mean())
+    lines += ["", f"- Most stable: **{best}**. ARI 1 = identical clusters on every subsample, 0 = chance agreement.", ""]
+    return lines
+
+
+def _paired_cluster_lines(paired) -> list[str]:
+    if paired is None:
+        return []
+    lines = ["### Paired bootstrap: HAC weighted (project) − K-means", "",
+             f"Both clusterings fixed; jobs resampled with replacement {clf.N_BOOTSTRAP} times; each method scored on "
+             "its own non-noise jobs within the same resample.", "",
+             "| Metric | HAC weighted | K-means | Difference | 95% CI of difference |", "|---|---|---|---|---|"]
+    for metric, r in paired.iterrows():
+        lines.append(f"| {metric} | {r['a']:.3f} | {r['b']:.3f} | {r['diff']:+.3f} | "
+                     f"{r['ci_low']:+.3f} – {r['ci_high']:+.3f} |")
+    verdicts = []
+    for metric, r in paired.iterrows():
+        if r["ci_low"] > 0:
+            verdicts.append(f"{metric}: HAC weighted significantly higher")
+        elif r["ci_high"] < 0:
+            verdicts.append(f"{metric}: K-means significantly higher")
+        else:
+            verdicts.append(f"{metric}: no significant difference (CI includes 0)")
+    lines += ["", "- " + "; ".join(verdicts) + ".", ""]
+    return lines
+
+
+def write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs, n_clustered,
+                 stabilities=None, cluster_paired=None):
     ref = "Decision tree (CART) — project model"
     best = clf_table["accuracy"].idxmax()
     seniority = next(n for n in clf_table.index if n.startswith("Seniority only"))
@@ -448,6 +537,8 @@ def write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs, n_
         f"- Methods with no valid k (or not meeting the noise rule): "
         f"{', '.join(n for n in clu_table.index if not clu_table.loc[n, 'valid']) or 'none'}.",
         "",
+        *_stability_lines(stabilities, clu_table),
+        *_paired_cluster_lines(cluster_paired),
         "## Q1 — Apriori vs FP-Growth",
         "",
         f"Train set, lift > 1.2 and confidence ≥ 0.5 (same as `apriori.py`); median of {TIMING_REPEATS} runs. "
@@ -469,9 +560,10 @@ if __name__ == "__main__":
     import matplotlib
 
     matplotlib.use("Agg")
-    clf_t, clu_t, stab, rules_t = run_comparison()
+    clf_t, clu_t, stab, rules_t, stabs, paired = run_comparison()
     print(clf_t[["accuracy", "ci_low", "ci_high", "macro_f1"]].round(3).to_string())
     print(clu_t[["k", "n_real_clusters", "noise_share", "silhouette", "purity", "ari", "valid"]].to_string())
-    print(f"stability ARI mean {stab.mean():.3f}")
+    print({n: round(float(v.mean()), 3) for n, v in stabs.items()})
+    print(paired.round(3).to_string())
     print(rules_t.to_string())
     print(f"Report: {REPORT_PATH}")
