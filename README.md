@@ -146,7 +146,7 @@ Cùng dữ liệu, cùng cách chia fold và cùng thước đo với model củ
 | Đạt ngưỡng độ phủ từ điển ≥ 80% (A7) | **Chưa đạt:** 72,6% trên bộ kiểm tra độc lập — ghi vào hạn chế, không chỉnh thêm để tránh overfit |
 | Ghi `docs/STANDUP.md` | Vẫn là template |
 
-Lịch: Mốc 3 (khoá nội dung) **đã lùi** để bổ sung phần so sánh theo yêu cầu giảng viên (DECISIONS 04/10); khoá code ngay sau khi xong, trước buổi tổng duyệt. Ngày thuyết trình: xác nhận lại với giảng viên.
+Lịch: Mốc 3 (khoá nội dung) đã lùi để bổ sung phần so sánh theo yêu cầu giảng viên (DECISIONS 04/10); **thuyết trình sáng 06/10**. Q2 giữ HAC weighted, K-means là phương pháp so sánh tốt hơn về purity/độ ổn định (DECISIONS 05/10).
 
 ---
 
