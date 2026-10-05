@@ -280,6 +280,47 @@ def paired_bootstrap_clustering(labels_a: np.ndarray, labels_b: np.ndarray, grou
     return pd.DataFrame(rows).set_index("metric")
 
 
+SAME_SIZE_RANGE = range(3, 8)   # numbers of real clusters compared at equal size
+SAME_SIZE_K_MAX = 20            # largest k searched to reach a given number of real clusters
+
+
+def labels_with_n_real(X: np.ndarray, method: str, n_real: int, k_max: int = SAME_SIZE_K_MAX):
+    """Smallest k (2..k_max) whose clustering has exactly n_real real clusters after the noise rule.
+
+    Returns (k, labels) or (None, None) if no k reaches that number.
+    """
+    Z = None if method == "kmeans" else linkage(pdist(X, metric="jaccard"), method=method)
+    for k in range(2, k_max + 1):
+        if method == "kmeans":
+            labels = _fit_labels(X, k, "kmeans")
+        else:
+            labels = cl.assign_noise(fcluster(Z, k, criterion="maxclust"))
+        if len(set(labels[labels != cl.NOISE_LABEL])) == n_real:
+            return k, labels
+    return None, None
+
+
+def same_size_comparison(M: pd.DataFrame, groups: np.ndarray, sizes=SAME_SIZE_RANGE,
+                         n_boot: int = clf.N_BOOTSTRAP) -> pd.DataFrame:
+    """Weighted HAC vs K-means at the same number of real clusters (removes purity's bias towards more clusters)."""
+    X = M.to_numpy()
+    rows = []
+    for m in sizes:
+        k_h, lab_h = labels_with_n_real(X, "weighted", m)
+        k_k, lab_k = labels_with_n_real(X, "kmeans", m)
+        if lab_h is None or lab_k is None:
+            continue
+        paired = paired_bootstrap_clustering(lab_h, lab_k, groups, n=n_boot)
+        row = {"n_real_clusters": m, "hac_k": k_h, "kmeans_k": k_k,
+               "hac_noise": float((lab_h == cl.NOISE_LABEL).mean()),
+               "kmeans_noise": float((lab_k == cl.NOISE_LABEL).mean())}
+        for metric, r in paired.iterrows():
+            row.update({f"{metric}_hac": r["a"], f"{metric}_kmeans": r["b"], f"{metric}_diff": r["diff"],
+                        f"{metric}_ci_low": r["ci_low"], f"{metric}_ci_high": r["ci_high"]})
+        rows.append(row)
+    return pd.DataFrame(rows).set_index("n_real_clusters")
+
+
 # ---------------------------------------------------------------------------
 # Q1 — Apriori vs FP-Growth
 # ---------------------------------------------------------------------------
@@ -417,6 +458,7 @@ def run_comparison():
     stability = stabilities[project]
     groups = groups_by_job.reindex(M.index).to_numpy()
     cluster_paired = paired_bootstrap_clustering(clu_labels[project], clu_labels["K-means (binary vectors)"], groups)
+    same_size = same_size_comparison(M, groups)
 
     # Q1
     df = skills_df.merge(jobs_df[["job_id", "posted_date"]], on="job_id")
@@ -430,8 +472,8 @@ def run_comparison():
     plot_clustering(clu_table, FIG_DIR / "model_compare_clustering.png")
     plot_apriori(rules_table, FIG_DIR / "model_compare_apriori_fpgrowth.png")
     write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs=len(X), n_clustered=len(M),
-                 stabilities=stabilities, cluster_paired=cluster_paired)
-    return clf_table, clu_table, stability, rules_table, stabilities, cluster_paired
+                 stabilities=stabilities, cluster_paired=cluster_paired, same_size=same_size)
+    return clf_table, clu_table, stability, rules_table, stabilities, cluster_paired, same_size
 
 
 def _stability_lines(stabilities, clu_table) -> list[str]:
@@ -469,8 +511,33 @@ def _paired_cluster_lines(paired) -> list[str]:
     return lines
 
 
+def _same_size_lines(same) -> list[str]:
+    if same is None or same.empty:
+        return []
+    def verdict(lo, hi):
+        return "HAC higher*" if lo > 0 else "K-means higher*" if hi < 0 else "n.s."
+    lines = ["### Same number of real clusters: HAC weighted vs K-means", "",
+             "For each number of real clusters, the smallest k reaching it for each method (same noise rule); paired "
+             f"bootstrap ({clf.N_BOOTSTRAP} resamples) of the difference HAC − K-means. * = 95% CI excludes 0.", "",
+             "| Real clusters | k (HAC / K-means) | Noise (HAC / K-means) | Purity HAC / K-means | Purity diff (95% CI) | "
+             "ARI HAC / K-means | ARI diff (95% CI) |", "|---|---|---|---|---|---|---|"]
+    for m, r in same.iterrows():
+        lines.append(
+            f"| {m} | {int(r['hac_k'])} / {int(r['kmeans_k'])} | {r['hac_noise']:.1%} / {r['kmeans_noise']:.1%} | "
+            f"{r['purity_hac']:.3f} / {r['purity_kmeans']:.3f} | {r['purity_diff']:+.3f} ({r['purity_ci_low']:+.3f} – "
+            f"{r['purity_ci_high']:+.3f}) {verdict(r['purity_ci_low'], r['purity_ci_high'])} | "
+            f"{r['ari_hac']:.3f} / {r['ari_kmeans']:.3f} | {r['ari_diff']:+.3f} ({r['ari_ci_low']:+.3f} – "
+            f"{r['ari_ci_high']:+.3f}) {verdict(r['ari_ci_low'], r['ari_ci_high'])} |")
+    n = len(same)
+    km_p = int((same["purity_ci_high"] < 0).sum()); km_a = int((same["ari_ci_high"] < 0).sum())
+    hac_p = int((same["purity_ci_low"] > 0).sum()); hac_a = int((same["ari_ci_low"] > 0).sum())
+    lines += ["", f"- K-means significantly better: purity at {km_p}/{n} sizes, ARI at {km_a}/{n} sizes; "
+                  f"HAC significantly better: purity at {hac_p}/{n}, ARI at {hac_a}/{n}.", ""]
+    return lines
+
+
 def write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs, n_clustered,
-                 stabilities=None, cluster_paired=None):
+                 stabilities=None, cluster_paired=None, same_size=None):
     ref = "Decision tree (CART) — project model"
     best = clf_table["accuracy"].idxmax()
     seniority = next(n for n in clf_table.index if n.startswith("Seniority only"))
@@ -539,6 +606,7 @@ def write_report(clf_table, clu_table, stability, k_cut, rules_table, n_jobs, n_
         "",
         *_stability_lines(stabilities, clu_table),
         *_paired_cluster_lines(cluster_paired),
+        *_same_size_lines(same_size),
         "## Q1 — Apriori vs FP-Growth",
         "",
         f"Train set, lift > 1.2 and confidence ≥ 0.5 (same as `apriori.py`); median of {TIMING_REPEATS} runs. "
@@ -560,10 +628,11 @@ if __name__ == "__main__":
     import matplotlib
 
     matplotlib.use("Agg")
-    clf_t, clu_t, stab, rules_t, stabs, paired = run_comparison()
+    clf_t, clu_t, stab, rules_t, stabs, paired, same = run_comparison()
     print(clf_t[["accuracy", "ci_low", "ci_high", "macro_f1"]].round(3).to_string())
     print(clu_t[["k", "n_real_clusters", "noise_share", "silhouette", "purity", "ari", "valid"]].to_string())
     print({n: round(float(v.mean()), 3) for n, v in stabs.items()})
     print(paired.round(3).to_string())
+    print(same.round(3).to_string())
     print(rules_t.to_string())
     print(f"Report: {REPORT_PATH}")

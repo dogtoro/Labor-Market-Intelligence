@@ -326,6 +326,48 @@
       "HAC average linkage (Jaccard)": 0.454,
       "K-means (binary vectors)": 0.63
     },
+    "q2_same_size": {
+      "3": {
+        "purity_hac": 0.258,
+        "purity_kmeans": 0.311,
+        "purity_kmeans_better": true,
+        "ari_hac": 0.02,
+        "ari_kmeans": 0.066,
+        "ari_kmeans_better": true
+      },
+      "4": {
+        "purity_hac": 0.308,
+        "purity_kmeans": 0.374,
+        "purity_kmeans_better": true,
+        "ari_hac": 0.056,
+        "ari_kmeans": 0.089,
+        "ari_kmeans_better": false
+      },
+      "5": {
+        "purity_hac": 0.322,
+        "purity_kmeans": 0.415,
+        "purity_kmeans_better": true,
+        "ari_hac": 0.079,
+        "ari_kmeans": 0.11,
+        "ari_kmeans_better": false
+      },
+      "6": {
+        "purity_hac": 0.341,
+        "purity_kmeans": 0.385,
+        "purity_kmeans_better": true,
+        "ari_hac": 0.082,
+        "ari_kmeans": 0.11,
+        "ari_kmeans_better": false
+      },
+      "7": {
+        "purity_hac": 0.38,
+        "purity_kmeans": 0.374,
+        "purity_kmeans_better": false,
+        "ari_hac": 0.109,
+        "ari_kmeans": 0.107,
+        "ari_kmeans_better": false
+      }
+    },
     "q2_hac_minus_kmeans": {
       "purity": {
         "diff": -0.052,

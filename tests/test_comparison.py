@@ -85,3 +85,13 @@ def test_clustering_stability_is_perfect_on_well_separated_data(method):
     M = pd.DataFrame(blocks, columns=[f"s{i}" for i in range(9)])
     scores = cmp.clustering_stability(M, k=3, method=method, n=5)
     assert np.allclose(scores, 1.0)
+
+
+def test_labels_with_n_real_finds_requested_cluster_count():
+    blocks = np.zeros((120, 9), dtype=bool)
+    for b in range(3):
+        blocks[b * 40:(b + 1) * 40, b * 3:(b + 1) * 3] = True
+    for method in ("weighted", "kmeans"):
+        k, labels = cmp.labels_with_n_real(blocks, method, n_real=3)
+        assert k == 3 and len(set(labels)) == 3
+    assert cmp.labels_with_n_real(blocks, "kmeans", n_real=50, k_max=5) == (None, None)
